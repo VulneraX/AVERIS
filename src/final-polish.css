@@ -1,0 +1,7 @@
+.lesson-takeaway,.review-summary,.result-note{background:#fff8f8;color:#a8172a}
+.complete-score,.completed-score,.score-improvement,.positive,.metric-positive{color:#b2162b}
+.mini-stat-row svg,.reassurance svg,.compare-message svg,.report-callout>div{color:#b2162b}
+.chart-summary span{color:#b2162b}
+.choice-list label.selected{border-color:#de1a34;background:#fffafa;box-shadow:none}
+.employee .awareness-card .score-badge{background:#fff0f2;color:#a8172a}
+.employee .awareness-card .score-badge i{background:#de1a34}

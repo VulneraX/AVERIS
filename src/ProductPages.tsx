@@ -1,0 +1,126 @@
+import { useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  ArrowLeft, ArrowRight, CalendarDays, Check, ChevronRight, CircleAlert, Clock3,
+  FileCheck2, Filter, MailWarning, Plus, Search, ShieldCheck, Users,
+} from 'lucide-react';
+import { Avatar, BackButton, Button, PageHeader, ProgressBar, ScoreBadge, SectionHeader, StatusBadge } from './components';
+import { useProduct, type CampaignStatus } from './product-state';
+import { employees, topics } from './data';
+
+export function OverviewPage() {
+  const navigate = useNavigate();
+  const { organizationScore, previousOrganizationScore, employeeScore, campaigns, phishingReports, scoreSignals } = useProduct();
+  const active = campaigns.find((campaign) => campaign.status === 'Active') ?? campaigns[0];
+  return <>
+    <PageHeader title="Human Risk Overview" actions={<span className="plain-meta">Updated 2 hours ago</span>}/>
+    <section className="overview-score-block">
+      <div className="overview-score-main"><span>Organization Awareness Score</span><div><strong>{organizationScore}</strong><small>/100</small><ScoreBadge score={organizationScore}/></div><p>+{organizationScore-previousOrganizationScore} from the previous cycle</p></div>
+      <div className="score-signal-summary"><div><span>Pengetahuan</span><strong>{scoreSignals.knowledge}</strong><small>Bobot 35%</small></div><div><span>Perilaku</span><strong>{scoreSignals.behavior}</strong><small>Bobot 30%</small></div><div><span>Pelaporan</span><strong>{scoreSignals.reporting}</strong><small>Bobot 20%</small></div><div><span>Peningkatan</span><strong>{scoreSignals.improvement}</strong><small>Bobot 15%</small></div></div>
+      <div className="score-explanation"><span>Latest change</span><p>Score increased after phishing reporting improved and 28 employees completed targeted learning.</p><button onClick={()=>navigate('/admin/awareness/methodology')}>How the score works <ArrowRight size={14}/></button></div>
+    </section>
+    <div className="overview-decision-grid">
+      <section className="enterprise-section trend-section"><SectionHeader title="Human risk trend"/><div className="trend-chart-v2"><div className="trend-axis"><span>85</span><span>70</span><span>55</span></div><svg viewBox="0 0 520 160" preserveAspectRatio="none" aria-label="Awareness Score increased from 67 to current score"><path className="grid" d="M0 25H520M0 80H520M0 135H520"/><path className="line" d={`M20 125 C100 118 120 104 175 98 S280 78 335 72 S430 50 500 ${Math.max(24,125-(organizationScore-60)*5)}`}/><circle cx="20" cy="125" r="4"/><circle cx="175" cy="98" r="4"/><circle cx="335" cy="72" r="4"/><circle cx="500" cy={Math.max(24,125-(organizationScore-60)*5)} r="5"/></svg><div className="trend-labels"><span>May</span><span>June</span><span>July</span><span>August</span></div></div></section>
+      <section className="enterprise-section risk-focus"><SectionHeader title="Risk requiring action"/><div className="risk-focus-row"><div><span className="section-kicker">WEAKEST TOPIC</span><strong>Phishing Awareness</strong><p>62 / 100 · Needs Improvement</p></div><div><span className="section-kicker">MOST AFFECTED</span><strong>Finance and Sales</strong><p>67 employees</p></div></div><div className="recommended-line"><div><span>Recommended action</span><strong>Assign a phishing refresher to Finance.</strong></div><Button onClick={()=>navigate('/admin/learning?assign=1')}>Assign Learning</Button></div></section>
+    </div>
+    <div className="overview-operational-grid">
+      <section className="enterprise-section campaign-progress-block"><SectionHeader title="Campaign progress" action={<button className="text-link" onClick={()=>navigate(`/admin/campaigns/${active.id}`)}>Open <ArrowRight size={14}/></button>}/><strong>{active.name}</strong><div className="campaign-progress-line"><ProgressBar value={active.completion}/><span>{active.completion}% complete</span></div><dl><div><dt>Audience</dt><dd>{active.employees}</dd></div><div><dt>Current score</dt><dd>{active.score}</dd></div><div><dt>Improvement</dt><dd>+{(active.score??0)-(active.baseline??0)}</dd></div></dl></section>
+      <section className="enterprise-section positive-behavior"><SectionHeader title="Positive security behavior"/><strong>{phishingReports}</strong><span>phishing messages reported</span><p>Reporting rate is 31%, up 7 points.</p></section>
+      <section className="enterprise-section attention-compact"><SectionHeader title="People needing attention" action={<button className="text-link" onClick={()=>navigate('/admin/employees')}>View <ArrowRight size={14}/></button>}/><strong>18</strong><span>9% of workforce</span><p>11 have a low phishing score and recent risky behavior.</p></section>
+    </div>
+    <section className="enterprise-section priority-section"><SectionHeader title="Priority people" action={<button className="text-link" onClick={()=>navigate('/admin/employees')}>View all <ArrowRight size={14}/></button>}/><div className="table-scroll"><table className="enterprise-table"><thead><tr><th>Employee</th><th>Department</th><th>Awareness</th><th>Reason</th><th>Recommended action</th><th></th></tr></thead><tbody>{employees.slice(0,4).map((employee)=>{const score=employee.id==='andini-putri'?employeeScore:employee.score;return <tr key={employee.id} onClick={()=>navigate(`/admin/employees/${employee.id}`)}><td><div className="employee-cell"><Avatar name={employee.name} size="sm"/><span><strong>{employee.name}</strong><small>{employee.email}</small></span></div></td><td>{employee.department}</td><td><strong>{score}</strong> <ScoreBadge score={score}/></td><td>{employee.weakest} is below target</td><td>{score<50?'Assign refresher':'Monitor in current campaign'}</td><td><ChevronRight size={15}/></td></tr>})}</tbody></table></div></section>
+  </>;
+}
+
+export function CampaignsPage() {
+  const navigate = useNavigate();
+  const { campaigns } = useProduct();
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('All statuses');
+  const visible = useMemo(() => campaigns.filter((campaign) => campaign.name.toLowerCase().includes(query.toLowerCase()) && (status === 'All statuses' || campaign.status === status)), [campaigns, query, status]);
+  return <>
+    <PageHeader title="Campaigns" actions={<Button onClick={() => navigate('/admin/campaigns/new')}><Plus size={16}/>Create Campaign</Button>}/>
+    <div className="page-intro-line"><p>Plan and measure structured awareness cycles.</p><span>{campaigns.filter((item) => item.status === 'Active').length} active campaign</span></div>
+    <div className="campaign-summary">
+      <div><span>Active campaign</span><strong>Q3 Security Awareness 2026</strong><small>Ends Sep 30</small></div>
+      <div><span>Program coverage</span><strong>100%</strong><small>200 employees</small></div>
+      <div><span>Current improvement</span><strong>+14</strong><small>64 baseline → 78 current</small></div>
+      <div><span>Next milestone</span><strong>Sep 15</strong><small>Finance campaign starts</small></div>
+    </div>
+    <section className="enterprise-section">
+      <div className="table-toolbar"><label className="compact-search"><Search size={16}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search campaigns"/></label><label className="compact-select"><Filter size={15}/><select value={status} onChange={(event) => setStatus(event.target.value)}><option>All statuses</option><option>Draft</option><option>Scheduled</option><option>Active</option><option>Completed</option></select></label></div>
+      <div className="table-scroll"><table className="enterprise-table"><thead><tr><th>Campaign</th><th>Audience</th><th>Status</th><th>Completion</th><th>Awareness Score</th><th>Improvement</th><th>Schedule</th><th></th></tr></thead><tbody>{visible.map((campaign) => {
+        const improvement = campaign.score !== null && campaign.baseline !== null ? campaign.score - campaign.baseline : null;
+        return <tr key={campaign.id} onClick={() => navigate(`/admin/campaigns/${campaign.id}`)}><td><strong>{campaign.name}</strong><small>{campaign.learning.length} learning module{campaign.learning.length !== 1 ? 's' : ''}</small></td><td>{campaign.audience}<small>{campaign.employees} employees</small></td><td><StatusBadge status={campaign.status}/></td><td><div className="table-progress"><ProgressBar value={campaign.completion}/><span>{campaign.completion}%</span></div></td><td>{campaign.score === null ? <span className="muted-dash">—</span> : <><strong>{campaign.score}</strong> /100</>}</td><td>{improvement === null ? '—' : <strong className="metric-positive">+{improvement}</strong>}</td><td>{campaign.schedule}</td><td><ChevronRight size={16}/></td></tr>})}</tbody></table></div>
+    </section>
+  </>;
+}
+
+const campaignSteps = ['Campaign Details', 'Audience', 'Learning & Assessment', 'Simulation', 'Schedule', 'Review'];
+
+export function CampaignBuilderPage() {
+  const navigate = useNavigate();
+  const { createCampaign } = useProduct();
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState({ name: 'Q4 Security Awareness 2026', audience: 'All employees', employees: 200, learning: ['Phishing Awareness'], assessment: 'Q4 Awareness Assessment', simulation: '', schedule: 'Oct 1 – Dec 15, 2026', status: 'Draft' as CampaignStatus });
+  const toggleLearning = (name: string) => setForm((current) => ({ ...current, learning: current.learning.includes(name) ? current.learning.filter((item) => item !== name) : [...current.learning, name] }));
+  const launch = () => {
+    const id = createCampaign({ ...form, completion: 0, score: null, baseline: null, simulation: form.simulation || undefined });
+    navigate(`/admin/campaigns/${id}?created=1`);
+  };
+  return <>
+    <BackButton label="Campaigns"/>
+    <PageHeader title="Create Campaign"/>
+    <div className="builder-shell">
+      <aside className="builder-steps">{campaignSteps.map((label, index) => <button key={label} className={index === step ? 'active' : index < step ? 'done' : ''} onClick={() => index <= step && setStep(index)}><span>{index < step ? <Check size={13}/> : index + 1}</span><strong>{label}</strong></button>)}</aside>
+      <section className="builder-content">
+        <div className="builder-heading"><span>Step {step + 1} of 6</span><h2>{campaignSteps[step]}</h2></div>
+        {step === 0 && <div className="form-stack"><label>Campaign name<input value={form.name} onChange={(event) => setForm({...form, name:event.target.value})}/></label><label>Description<textarea defaultValue="Measure awareness, address priority risks, and track improvement for the Q4 cycle."/></label><label>Campaign owner<select><option>Syarif Rahman</option></select></label></div>}
+        {step === 1 && <div className="form-stack"><label>Audience<select value={form.audience} onChange={(event) => setForm({...form,audience:event.target.value,employees:event.target.value === 'Finance' ? 32 : 200})}><option>All employees</option><option>Finance</option><option>Sales</option><option>Selected employees</option></select></label><div className="selection-summary"><Users size={18}/><div><strong>{form.employees} employees</strong><p>{form.audience} · Employee list updates before launch.</p></div></div><label className="check-line"><input type="checkbox" defaultChecked/>Exclude inactive employees</label></div>}
+        {step === 2 && <div className="builder-options"><h3>Learning modules</h3>{['Phishing Awareness','Password & Account Security','Social Engineering','Data Protection Basics','Safe Browsing & Device Security','Business Email Compromise','Secure Remote Working'].map((name) => <label key={name} className={form.learning.includes(name)?'selected':''}><input type="checkbox" checked={form.learning.includes(name)} onChange={() => toggleLearning(name)}/><span><strong>{name}</strong><small>Required · 6–8 minutes</small></span></label>)}<h3>Assessment</h3><label className="selected"><input type="radio" checked readOnly/><span><strong>{form.assessment}</strong><small>Measures knowledge before and after learning</small></span></label></div>}
+        {step === 3 && <div className="builder-options"><div className="optional-line"><h3>Phishing simulation</h3><span>Optional</span></div>{['No simulation','Password Expiration','Shared Document Invitation','Delivery Notification'].map((name) => <label key={name} className={(form.simulation || 'No simulation')===name?'selected':''}><input type="radio" checked={(form.simulation || 'No simulation')===name} onChange={() => setForm({...form,simulation:name==='No simulation'?'':name})}/><span><strong>{name}</strong><small>{name === 'No simulation' ? 'Measure knowledge only in this campaign' : 'Safe simulation; no real credentials are collected'}</small></span></label>)}</div>}
+        {step === 4 && <div className="form-stack"><label>Campaign schedule<div className="input-icon"><CalendarDays size={17}/><input value={form.schedule} onChange={(event)=>setForm({...form,schedule:event.target.value})}/></div></label><label>Reminder cadence<select><option>7 days before due date</option><option>3 and 7 days before due date</option><option>No automatic reminder</option></select></label><label className="check-line"><input type="checkbox" defaultChecked/>Send assignment notification at launch</label></div>}
+        {step === 5 && <div className="campaign-review"><dl><div><dt>Campaign</dt><dd>{form.name}</dd></div><div><dt>Audience</dt><dd>{form.audience} · {form.employees} employees</dd></div><div><dt>Learning</dt><dd>{form.learning.join(', ')}</dd></div><div><dt>Assessment</dt><dd>{form.assessment}</dd></div><div><dt>Simulation</dt><dd>{form.simulation || 'Not included'}</dd></div><div><dt>Schedule</dt><dd>{form.schedule}</dd></div></dl><div className="security-notice"><ShieldCheck size={17}/><p>Credential scenarios record attempts only. AVERIS never requests or stores real passwords.</p></div></div>}
+        <footer className="builder-footer"><Button variant="secondary" onClick={() => step === 0 ? navigate('/admin/campaigns') : setStep(step - 1)}>{step === 0 ? 'Cancel' : <><ArrowLeft size={16}/>Back</>}</Button><Button disabled={step === 2 && form.learning.length === 0} onClick={() => step === 5 ? launch() : setStep(step + 1)}>{step === 5 ? 'Save Campaign' : <>Continue<ArrowRight size={16}/></>}</Button></footer>
+      </section>
+    </div>
+  </>;
+}
+
+export function CampaignDetailPage() {
+  const { campaignId } = useParams();
+  const navigate = useNavigate();
+  const { campaigns, updateCampaignStatus } = useProduct();
+  const campaign = campaigns.find((item) => item.id === campaignId) ?? campaigns[0];
+  const improvement = campaign.score !== null && campaign.baseline !== null ? campaign.score - campaign.baseline : null;
+  return <>
+    <BackButton label="Campaigns"/>
+    <div className="record-header"><div><div className="record-title"><h1>{campaign.name}</h1><StatusBadge status={campaign.status}/></div><p>{campaign.audience} · {campaign.employees} employees · {campaign.schedule}</p></div><div><Button variant="secondary" onClick={()=>navigate('/employee/assessment/baseline')}>Pratinjau Asesmen</Button><Button variant="secondary" onClick={()=>window.print()}>Ekspor Hasil</Button>{campaign.status==='Draft'&&<Button onClick={()=>updateCampaignStatus(campaign.id,'Active')}>Luncurkan Kampanye</Button>}</div></div>
+    <section className="campaign-metrics"><div><span>Completion</span><strong>{campaign.completion}%</strong><ProgressBar value={campaign.completion}/></div><div><span>Awareness Score</span><strong>{campaign.score ?? '—'}{campaign.score !== null && <small>/100</small>}</strong>{campaign.score !== null && <ScoreBadge score={campaign.score}/>}</div><div><span>Baseline</span><strong>{campaign.baseline ?? 'Not measured'}</strong><small>{campaign.baseline !== null ? 'Initial assessment' : 'Available after assessment'}</small></div><div><span>Improvement</span><strong>{improvement === null ? '—' : `+${improvement}`}</strong><small>Baseline to current</small></div></section>
+    <div className="campaign-detail-grid"><section className="enterprise-section"><SectionHeader title="Campaign progress"/><div className="stage-list">{[['Baseline assessment',100,'Completed'],['Assigned learning',campaign.completion, campaign.status === 'Draft' ? 'Not Started':'In Progress'],['Follow-up assessment',campaign.status === 'Completed'?100:34,campaign.status === 'Completed'?'Completed':'In Progress'],['Risk review',campaign.status === 'Completed'?100:0,campaign.status === 'Completed'?'Completed':'Not Started']].map(([name,value,status]) => <div key={name as string}><span className={`stage-state ${status === 'Completed'?'complete':''}`}>{status === 'Completed'?<Check size={13}/>:null}</span><div><strong>{name as string}</strong><small>{status as string}</small></div><ProgressBar value={value as number}/><span>{value}%</span></div>)}</div></section><aside className="enterprise-section campaign-scope"><SectionHeader title="Campaign scope"/><dl><div><dt>Learning</dt><dd>{campaign.learning.join(', ')}</dd></div><div><dt>Assessment</dt><dd>{campaign.assessment}</dd></div><div><dt>Simulation</dt><dd>{campaign.simulation || 'Not included'}</dd></div><div><dt>Audience</dt><dd>{campaign.audience}</dd></div></dl></aside></div>
+    {campaign.baseline !== null && <section className="enterprise-section baseline-section"><div><span className="section-kicker">PROVE IMPROVEMENT</span><h2>Baseline to current</h2><p>Awareness improved after targeted learning and follow-up assessment.</p></div><div className="baseline-compare"><div><span>Baseline</span><strong>{campaign.baseline}</strong></div><ArrowRight size={20}/><div><span>Current</span><strong>{campaign.score ?? '—'}</strong></div><div className="improvement-number"><span>Improvement</span><strong>{improvement === null ? '—' : `+${improvement}`}</strong></div></div><Button variant="secondary" onClick={()=>navigate('/admin/awareness')}>View Risk Analysis</Button></section>}
+  </>;
+}
+
+export function ScoreMethodologyPage() {
+  const contributors = [{name:'Knowledge Assessments',weight:35,description:'Assessment results across completed security topics.'},{name:'Phishing Behavior',weight:30,description:'Actions recorded during safe phishing simulations.'},{name:'Reporting Behavior',weight:20,description:'Correct reporting and time taken to report suspicious messages.'},{name:'Learning Improvement',weight:15,description:'Measured improvement between baseline and follow-up assessments.'}];
+  return <><BackButton label="Awareness"/><PageHeader title="How Awareness Score Works"/><div className="methodology-intro"><div><span>Organization Awareness Score</span><strong>78<small>/100</small></strong><ScoreBadge score={78}/></div><p>AVERIS combines knowledge, behavior, and improvement signals. Every score change can be traced to the signals below.</p></div><section className="enterprise-section"><SectionHeader title="Contributing signals"/><div className="contributor-table">{contributors.map((item)=><div key={item.name}><div><strong>{item.name}</strong><p>{item.description}</p></div><ProgressBar value={item.weight}/><strong>{item.weight}%</strong></div>)}</div></section><div className="methodology-grid"><section className="enterprise-section"><SectionHeader title="Calculation status"/><dl className="definition-list"><div><dt>Last calculation</dt><dd>Aug 28, 2026 · 08:00 WITA</dd></div><div><dt>Data sufficiency</dt><dd><StatusBadge status="Sufficient"/> 184 employees assessed</dd></div><div><dt>Score confidence</dt><dd>High · 92%</dd></div><div><dt>Review cadence</dt><dd>Daily and after significant events</dd></div></dl></section><section className="enterprise-section"><SectionHeader title="Latest change"/><div className="change-explanation"><strong>+6 points</strong><p>Phishing reporting improved and 28 employees completed targeted learning.</p><ul><li><span>Reporting behavior</span><strong>+3.2</strong></li><li><span>Knowledge assessments</span><strong>+1.8</strong></li><li><span>Learning improvement</span><strong>+1.0</strong></li></ul></div></section></div><div className="methodology-note"><CircleAlert size={17}/><p>Awareness Score supports risk decisions. It is not an employee performance rating and should be interpreted with available data context.</p></div></>;
+}
+
+export function SimulationsPage() {
+  const navigate = useNavigate();
+  return <><PageHeader title="Simulations"/><div className="page-intro-line"><p>Measure real-world phishing behavior with safe scenarios.</p><span>Credential attempts only — passwords are never stored</span></div><section className="enterprise-section"><div className="empty-state-structured"><span><MailWarning size={23}/></span><div><h2>No simulations have been launched</h2><p>Add an optional simulation to a campaign to start measuring behavior.</p></div><Button onClick={()=>navigate('/admin/campaigns/new')}>Create Campaign</Button></div></section><section className="enterprise-section template-table"><SectionHeader title="Available templates"/><div className="table-scroll"><table className="enterprise-table"><thead><tr><th>Template</th><th>Scenario type</th><th>Difficulty</th><th>Signal measured</th><th>Status</th></tr></thead><tbody>{[['Password Expiration','Email Link','Moderate','Clicked · Credential attempted'],['Shared Document Invitation','Email Link','Moderate','Clicked · Reported'],['Delivery Notification','Email Link','Easy','Clicked · Reported'],['Executive Payment Request','CEO Fraud / BEC','Advanced','Replied · Reported'],['QR Code Sign-in','QR Phishing','Advanced','Scanned · Reported']].map((row)=><tr key={row[0]}>{row.map((cell,index)=><td key={cell}>{index===0?<strong>{cell}</strong>:cell}</td>) }<td><StatusBadge status="Ready"/></td></tr>)}</tbody></table></div></section></>;
+}
+
+export function IntegrationsPage() {
+  const [selected,setSelected]=useState('');
+  const integrations=[['Microsoft Entra ID','Directory sync and employee lifecycle','Not Connected'],['Microsoft 365','Reporting and simulation delivery','Not Connected'],['Google Workspace','Directory sync and mail reporting','Not Connected'],['SCIM','Automated user provisioning','Not Connected'],['Microsoft Teams','Learning notifications','Not Connected'],['SIEM / Webhook','Export human-risk events','Not Connected']];
+  return <><PageHeader title="Integrations"/><div className="page-intro-line"><p>Connect identity, collaboration, and security systems.</p></div>{selected&&<div className="inline-action-panel" role="status"><div><strong>{selected} setup</strong><p>Connection setup requires organization credentials. This prototype does not connect to an external service.</p></div><Button variant="secondary" onClick={()=>setSelected('')}>Close</Button></div>}<section className="enterprise-section integration-list">{integrations.map(([name,description,status])=><div key={name}><span className="integration-monogram">{name.split(' ').map((part)=>part[0]).join('').slice(0,2)}</span><div><strong>{name}</strong><p>{description}</p></div><StatusBadge status={status}/><Button variant="secondary" onClick={()=>setSelected(name)}>Configure</Button></div>)}</section><p className="settings-footnote">Integration screens show the planned product structure. No external connection is active in this prototype.</p></>;
+}
+
+export function SettingsPage() {
+  const { notifications, resetDemo } = useProduct();
+  const [enabled,setEnabled]=useState<Record<string,boolean>>({});
+  const items=[['Assignment email','Sent when learning or a campaign is assigned'],['Due-date reminder','7 days before the due date'],['Overdue reminder','Every 7 days while overdue'],['Completion notification','Sent after assessment completion'],['Certificate notification','Sent when a certificate is issued'],['Admin weekly summary','Every Monday at 08:00 WITA'],['Campaign completion summary','Sent to campaign owner']];
+  return <><PageHeader title="Settings"/><section className="enterprise-section settings-section"><SectionHeader title="Notification schedule"/><div className="settings-rows">{items.map(([name,description])=>{const active=enabled[name]??true;return <div key={name}><div><strong>{name}</strong><p>{description}</p></div><StatusBadge status={active?'Enabled':'Disabled'}/><button onClick={()=>setEnabled({...enabled,[name]:!active})} className={`toggle-switch ${active?'active':''}`} aria-pressed={active} aria-label={`Toggle ${name}`}><i/></button></div>})}</div></section><section className="enterprise-section notification-log"><SectionHeader title="Recent delivery"/><div className="table-scroll"><table className="enterprise-table"><thead><tr><th>Type</th><th>Message</th><th>Status</th><th>Date</th></tr></thead><tbody>{notifications.map(item=><tr key={item.id}><td>{item.type}</td><td><strong>{item.message}</strong></td><td><StatusBadge status={item.status}/></td><td>{item.date}</td></tr>)}</tbody></table></div></section><section className="enterprise-section demo-control"><div><strong>Prototype data</strong><p>Reset scores, campaigns, notifications, and completion state to the initial demo.</p></div><Button variant="secondary" onClick={resetDemo}>Reset Demo Data</Button></section></>;
+}
