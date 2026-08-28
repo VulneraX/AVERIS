@@ -1,6 +1,8 @@
 # AVERIS
 
 **Measure Awareness. Reduce Human Risk.**
+![Uploading image.png…]()
+
 
 AVERIS is a Security Awareness & Human Risk platform by **VulneraX** that helps organizations measure, understand, and improve employee security awareness.
 
