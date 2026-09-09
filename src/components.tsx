@@ -1,14 +1,16 @@
 import type { PropsWithChildren, ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Award, BarChart3, BookOpen, ClipboardCheck, FileText,
+  AlertCircle, ArrowLeft, Award, BarChart3, BookOpen, FileText, History, Library,
   GraduationCap, LayoutDashboard, LogOut, Menu, Search, Settings, ShieldCheck,
-  Target, TrendingUp, UserRound, Users, X,
+  Target, TrendingUp, Users, Workflow, X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Role, ScoreLevel } from './types';
 import { scoreLevel } from './data';
 import { currentLanguage, switchLanguage } from './i18n';
+import { useAuth } from './auth';
+import { useProduct } from './product-state';
 
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
@@ -28,27 +30,34 @@ const adminNav = [
   { to: '/admin/employees', label: 'People', icon: Users },
   { to: '/admin/campaigns', label: 'Campaigns', icon: Target },
   { to: '/admin/learning', label: 'Learning', icon: GraduationCap },
+  { to: '/admin/content', label: 'Content', icon: Library },
+  { to: '/admin/automation', label: 'Automation', icon: Workflow },
   { to: '/admin/awareness', label: 'Awareness', icon: BarChart3 },
   { to: '/admin/reports', label: 'Reports', icon: FileText },
+  { to: '/admin/audit', label: 'Audit Log', icon: History },
 ];
 
 const employeeNav = [
   { to: '/employee', label: 'Home', icon: LayoutDashboard, end: true },
   { to: '/employee/learning', label: 'My Learning', icon: BookOpen },
-  { to: '/employee/assessment/baseline', label: 'Assessment', icon: ClipboardCheck },
   { to: '/employee/awareness', label: 'My Awareness', icon: BarChart3 },
   { to: '/employee/certificates', label: 'Certificates', icon: Award },
 ];
 
 export function AppShell({ role, children }: PropsWithChildren<{ role: Role }>) {
   const navigate = useNavigate();
+  const {user,logout}=useAuth();
+  const {error,pending,clearError}=useProduct();
   const [open, setOpen] = useState(false);
   const location = useLocation();
   useEffect(() => setOpen(false), [location.pathname]);
-  const nav = role === 'admin' ? adminNav : employeeNav;
+  const isAdmin=role!=='employee';
+  const nav = isAdmin ? adminNav : employeeNav;
+  const initials=user?.organization.name.split(' ').map(word=>word[0]).join('').slice(0,2).toUpperCase()??'AV';
+  const roleName={super_admin:'Super Admin',admin:'Administrator',manager:'Manager',employee:'Employee'}[role];
 
   return (
-    <div className={`app-shell ${role}`}>
+    <div className={`app-shell ${isAdmin?'admin':'employee'}`}>
       <button className="mobile-menu" onClick={() => setOpen(true)} aria-label="Open navigation"><Menu size={21} /></button>
       {open && <button className="sidebar-backdrop" onClick={() => setOpen(false)} aria-label="Close navigation" />}
       <aside className={`sidebar ${open ? 'open' : ''}`}>
@@ -56,10 +65,10 @@ export function AppShell({ role, children }: PropsWithChildren<{ role: Role }>) 
           <Brand />
           <button className="icon-button mobile-close" onClick={() => setOpen(false)} aria-label="Close navigation"><X size={20} /></button>
         </div>
-        {role === 'admin' && (
+        {isAdmin && (
           <div className="org-switcher" aria-label="Current organization">
-            <span className="org-logo">AC</span>
-            <span><strong>ACME Indonesia</strong><small>Technology Services</small></span>
+            <span className="org-logo">{initials}</span>
+            <span><strong>{user?.organization.name}</strong><small>Tenant terisolasi</small></span>
           </div>
         )}
         <nav className="side-nav" aria-label={`${role} navigation`}>
@@ -71,14 +80,14 @@ export function AppShell({ role, children }: PropsWithChildren<{ role: Role }>) 
           ))}
         </nav>
         <div className="sidebar-bottom">
-          {role === 'admin' && <>
+          {['super_admin','admin'].includes(role) && <>
             <button onClick={() => navigate('/admin/integrations')}><ShieldCheck size={18} /> Integrations</button>
             <button onClick={() => navigate('/admin/settings')}><Settings size={18} /> Settings</button>
           </>}
           <div className="profile-block">
-            <Avatar name={role === 'admin' ? 'Syarif Rahman' : 'Andini Putri'} />
-            <span><strong>{role === 'admin' ? 'Syarif Rahman' : 'Andini Putri'}</strong><small>{role === 'admin' ? 'Administrator' : 'Finance'}</small></span>
-            <button onClick={() => navigate('/')} aria-label="Sign out"><LogOut size={17} /></button>
+            <Avatar name={user?.name??'User'} />
+            <span><strong>{user?.name}</strong><small>{roleName}{user?.department?` · ${user.department}`:''}</small></span>
+            <button onClick={() => void logout().then(()=>navigate('/'))} aria-label="Sign out"><LogOut size={17} /></button>
           </div>
         </div>
       </aside>
@@ -90,13 +99,14 @@ export function AppShell({ role, children }: PropsWithChildren<{ role: Role }>) 
               <button className={currentLanguage() === 'en' ? 'active' : ''} onClick={() => switchLanguage('en')}>EN</button>
               <button className={currentLanguage() === 'id' ? 'active' : ''} onClick={() => switchLanguage('id')}>ID</button>
             </div>
-            <button className="prototype-switch" onClick={() => navigate(role === 'admin' ? '/employee' : '/admin')}>
-              <UserRound size={16} /> Switch to {role === 'admin' ? 'Employee' : 'Admin'} view
-            </button>
-            <Avatar name={role === 'admin' ? 'Syarif Rahman' : 'Andini Putri'} />
+            <span className="secure-session"><ShieldCheck size={15}/>{pending?'Menyimpan...':roleName}</span>
+            <Avatar name={user?.name??'User'} />
           </div>
         </header>
-        <div className="page-wrap">{children}</div>
+        <div className="page-wrap">
+          {error&&<div className="global-error" role="alert"><AlertCircle size={18}/><span>{error}</span><button onClick={clearError} aria-label="Tutup pesan error"><X size={16}/></button></div>}
+          {children}
+        </div>
       </main>
     </div>
   );
@@ -168,4 +178,8 @@ export function InsightBanner({ children, action }: PropsWithChildren<{ action?:
 export function Toast({ message, onClose }: { message: string; onClose: () => void }) {
   useEffect(() => { const timer = window.setTimeout(onClose, 4200); return () => window.clearTimeout(timer); }, [onClose]);
   return <div className="toast" role="status"><span><ShieldCheck size={18} /></span><div><strong>Assignment successful</strong><p>{message}</p></div><button onClick={onClose} aria-label="Close"><X size={17} /></button></div>;
+}
+
+export function EmptyState({title,description,action}:{title:string;description:string;action?:ReactNode}){
+  return <div className="clean-empty"><ShieldCheck size={25}/><div><strong>{title}</strong><p>{description}</p>{action}</div></div>;
 }

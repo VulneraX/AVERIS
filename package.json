@@ -4,22 +4,45 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k -n API,WEB -c blue,magenta \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "node --watch server/index.mjs",
+    "dev:web": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "start": "NODE_ENV=production node server/index.mjs",
+    "preview": "vite preview",
+    "check:server": "node --check server/index.mjs && node --check server/db.mjs && node --check server/product-actions.mjs && node --check server/platform.mjs && node --check server/workspace.mjs && node --check server/migrations.mjs && node --check server/identity.mjs && node --check server/sso.mjs",
+    "test": "node --test server/workspace.test.mjs server/security.test.mjs",
+    "test:e2e": "npm run build && playwright test",
+    "format:check": "prettier --check src/ui.tsx src/WorkspacePages.tsx src/LearningPages.tsx src/ControlPages.tsx src/design-system.css server/workspace.mjs server/migrations.mjs server/identity.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.3",
+    "cookie-parser": "^1.4.7",
+    "csv-parse": "^7.0.2",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
     "lucide-react": "latest",
+    "nodemailer": "^10.0.0",
+    "openid-client": "^6.8.8",
+    "pdfkit": "^0.20.2",
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "latest",
     "recharts": "latest",
-    "vite": "latest"
+    "vite": "latest",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "concurrently": "^10.0.5",
+    "prettier": "^3.9.6",
     "typescript": "latest"
   }
 }

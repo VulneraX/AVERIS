@@ -1,96 +1,514 @@
-import { useState } from 'react';
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
-import { AppShell, Brand, Button } from './components';
+import { useState } from "react";
+import { Link, Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
+import { useAuth } from "./auth";
+import { apiRequest } from "./api";
 import {
-  AdminOverview, AwarenessPage, CourseDetailAdmin, EmployeeDetailPage,
-  EmployeesPage, LearningLibrary, ReportDetail, ReportsPage,
-} from './AdminPages';
+  Brand,
+  Button,
+  Empty,
+  ErrorNotice,
+  Field,
+  LanguageSwitch,
+  Shell,
+  Skeleton,
+  useLocale,
+  useData,
+} from "./ui";
 import {
-  AnswerReview, BaselineAssessment, CertificateDetail, CertificatesPage, EmployeeAwareness,
-  EmployeeHome, LearningContent, MyLearningPage, QuizPage, QuizResult,
-} from './EmployeePages';
-import type { Role } from './types';
-import { currentLanguage, switchLanguage } from './i18n';
-import { CampaignBuilderPage, CampaignDetailPage, CampaignsPage, IntegrationsPage, OverviewPage, ScoreMethodologyPage, SettingsPage } from './ProductPages';
+  Overview,
+  People,
+  EmployeeDetail,
+  Campaigns,
+  CampaignBuilder,
+  CampaignDetail,
+  Awareness,
+  Reports,
+  Methodology,
+} from "./WorkspacePages";
+import {
+  LearningLibrary,
+  CourseBuilder,
+  EmployeeHome,
+  MyLearning,
+  MyAwareness,
+  LearningPlayer,
+  Quiz,
+  QuizResult,
+  Assessment,
+  Certificates,
+} from "./LearningPages";
+import {
+  Account,
+  Settings,
+  Integrations,
+  PhishingReports,
+  VerifyCertificate,
+  Simulation,
+} from "./ControlPages";
 
-function LoginPage() {
-  const navigate = useNavigate();
-  const [role, setRole] = useState<Role>('admin');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [notice, setNotice] = useState('');
-  const login = () => {
-    setLoading(true);
-    window.setTimeout(() => navigate(role === 'admin' ? '/admin' : '/employee'), 550);
-  };
-  return <div className="login-page">
-    <section className="login-brand-panel">
-      <div className="login-brand-top"><Brand /><span>Security Awareness &amp; Human Risk Platform</span></div>
-      <div className="login-story">
-        <span className="login-eyebrow"><ShieldCheck size={16}/> Visibility into human risk</span>
-        <h1>Measure Awareness.<br/><span>Reduce Human Risk.</span></h1>
-        <p>Measure understanding, identify weak areas, and improve your organization’s security habits over time.</p>
-        <div className="story-points">
-          <div><span><Check size={16}/></span><p><strong>Measure what matters</strong><small>Go beyond training completion with Awareness Scores.</small></p></div>
-          <div><span><Check size={16}/></span><p><strong>Act on weak areas</strong><small>Focus learning where human security risk is highest.</small></p></div>
-          <div><span><Check size={16}/></span><p><strong>Show improvement</strong><small>Track awareness progress across every cycle.</small></p></div>
+function AuthLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useLocale();
+  return (
+    <div className="auth-layout">
+      <section className="auth-story">
+        <Brand />
+        <div>
+          <span className="eyebrow">SECURITY AWARENESS & HUMAN RISK</span>
+          <h1>
+            Measure Awareness.
+            <br />
+            <span>Reduce Human Risk.</span>
+          </h1>
+          <p>
+            {t(
+              "Understand security risk through people, learning and measurable progress.",
+              "Pahami risiko keamanan melalui karyawan, pembelajaran, dan progres terukur.",
+            )}
+          </p>
         </div>
-      </div>
-      <p className="login-quote">AVERIS makes human security risk visible and measurable. <span>by VulneraX</span></p>
-      <div className="brand-orbit orbit-one"/><div className="brand-orbit orbit-two"/><div className="brand-grid"/>
-    </section>
-    <main className="login-form-panel">
-      <div className="mobile-login-brand"><Brand/></div>
-      <div className="login-language"><span>Language</span><div className="language-switch"><button className={currentLanguage()==='en'?'active':''} onClick={()=>switchLanguage('en')}>EN</button><button className={currentLanguage()==='id'?'active':''} onClick={()=>switchLanguage('id')}>ID</button></div></div>
-      <form className="login-form" onSubmit={(e)=>{e.preventDefault();login()}}>
-        <span className="eyebrow">Welcome to AVERIS</span>
-        <h2>Sign in to your account</h2>
-        <p>Use your work account to continue.</p>
-        <div className="demo-switch"><button type="button" className={role==='admin'?'active':''} onClick={()=>setRole('admin')}><span>Admin view</span><small>Manage organization risk</small></button><button type="button" className={role==='employee'?'active':''} onClick={()=>setRole('employee')}><span>Employee view</span><small>Complete assigned learning</small></button></div>
-        <label className="login-field"><span>Work email</span><div><Mail size={18}/><input type="email" value={role==='admin'?'admin@acme.co.id':'andini@acme.co.id'} readOnly/></div></label>
-        <label className="login-field"><span>Password</span><div><LockKeyhole size={18}/><input type={showPassword?'text':'password'} defaultValue="password123"/><button type="button" onClick={()=>setShowPassword(!showPassword)} aria-label="Toggle password">{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div></label>
-        <div className="login-options"><label><input type="checkbox"/>Remember me</label><button type="button" onClick={()=>setNotice('Password recovery instructions would be sent to your work email.')}>Forgot password?</button></div>
-        {notice && <p className="login-inline-notice" role="status">{notice}</p>}
-        <Button type="submit" disabled={loading} className="login-button">{loading?<span className="spinner"/>:<>{role==='admin'?'Sign in as Admin':'Sign in as Andini'}<ArrowRight size={18}/></>}</Button>
-        <p className="login-help">Contact your administrator if you cannot access your account.</p>
-      </form>
-      <footer>Protected by ACME Indonesia security policies · <button onClick={()=>setNotice('Privacy settings are managed by ACME Indonesia.')}>Privacy</button></footer>
-    </main>
-  </div>;
+        <footer>© {new Date().getFullYear()} VulneraX</footer>
+      </section>
+      <main className="auth-form-wrap">
+        <LanguageSwitch />
+        {children}
+      </main>
+    </div>
+  );
 }
-
-function AdminRoute({ children }: { children: React.ReactNode }) { return <AppShell role="admin">{children}</AppShell>; }
-function EmployeeRoute({ children }: { children: React.ReactNode }) { return <AppShell role="employee">{children}</AppShell>; }
-
+function Login() {
+  const options = useData("/api/auth/options");
+  const { user, loading, login } = useAuth();
+  const { t } = useLocale();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState<unknown>(null);
+  const [busy, setBusy] = useState(false);
+  if (loading) return <Skeleton />;
+  if (user)
+    return (
+      <Navigate
+        to={
+          user.mustChangePassword
+            ? "/change-password"
+            : user.role === "employee"
+              ? "/employee"
+              : "/admin"
+        }
+        replace
+      />
+    );
+  return (
+    <AuthLayout>
+      <form
+        className="auth-form"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          setError(null);
+          try {
+            await login(email, password, remember, otp || undefined);
+          } catch (e) {
+            setError(e);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <h1>{t("Sign in to AVERIS", "Masuk ke AVERIS")}</h1>
+        <p>
+          {t(
+            "Use the account provided by your organization.",
+            "Gunakan akun yang diberikan organisasi Anda.",
+          )}
+        </p>
+        <Field label={t("Work email", "Email kerja")}>
+          <input
+            required
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </Field>
+        <Field label={t("Password", "Kata sandi")}>
+          <input
+            required
+            type="password"
+            autoComplete="current-password"
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Field>
+        <details>
+          <summary>
+            {t("Use an authenticator code", "Gunakan kode autentikator")}
+          </summary>
+          <Field label={t("Authenticator code", "Kode autentikator")}>
+            <input
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+            />
+          </Field>
+        </details>
+        <div className="auth-options">
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+            />
+            {t("Remember me", "Ingat saya")}
+          </label>
+          <Link className="text-link" to="/forgot-password">
+            {t("Forgot password?", "Lupa kata sandi?")}
+          </Link>
+        </div>
+        <ErrorNotice error={error} />
+        {new URLSearchParams(window.location.search).has("sso") && (
+          <p role="alert">
+            {t(
+              "Single sign-on could not complete. Check that your account is active and your identity provider satisfies your MFA policy, or sign in with your password.",
+              "SSO belum berhasil. Pastikan akun aktif dan penyedia identitas memenuhi kebijakan MFA, atau masuk dengan kata sandi.",
+            )}
+          </p>
+        )}
+        <Button disabled={busy}>
+          {busy ? t("Signing in…", "Masuk…") : t("Sign in", "Masuk")}
+          <ArrowRight size={15} />
+        </Button>
+        {options.data?.ssoConfigured && (
+          <a className="button button-secondary" href="/api/auth/sso/start">
+            {t(
+              "Continue with organization SSO",
+              "Lanjutkan dengan SSO organisasi",
+            )}
+          </a>
+        )}
+        <div className="section">
+          <Link className="text-link" to="/verify">
+            {t("Verify a certificate", "Verifikasi sertifikat")} →
+          </Link>
+        </div>
+      </form>
+    </AuthLayout>
+  );
+}
+function PasswordReset({ reset = false }: { reset?: boolean }) {
+  const { t } = useLocale();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [token] = useState(() => window.location.hash.slice(1));
+  const [error, setError] = useState<unknown>(null);
+  const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  return (
+    <AuthLayout>
+      <form
+        className="auth-form"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          try {
+            await apiRequest(
+              reset ? "/api/auth/reset-password" : "/api/auth/forgot-password",
+              {
+                method: "POST",
+                body: JSON.stringify(
+                  reset
+                    ? { token, password, otp: otp || undefined }
+                    : { email },
+                ),
+              },
+            );
+            setDone(true);
+            if (reset) history.replaceState(null, "", location.pathname);
+          } catch (e) {
+            setError(e);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <h1>
+          {reset
+            ? t("Set your password", "Atur kata sandi")
+            : t("Reset password", "Reset kata sandi")}
+        </h1>
+        <p>
+          {reset
+            ? t(
+                "Choose a strong password for your organization account.",
+                "Pilih kata sandi kuat untuk akun organisasi Anda.",
+              )
+            : t(
+                "We will send a secure reset link if an active account matches this email.",
+                "Kami akan mengirim tautan reset aman jika ada akun aktif dengan email ini.",
+              )}
+        </p>
+        {done ? (
+          <div className="notice" role="status">
+            {reset
+              ? t(
+                  "Password saved. Sign in with your new password.",
+                  "Kata sandi tersimpan. Masuk dengan kata sandi baru.",
+                )
+              : t(
+                  "If the account exists, a reset email has been queued. Check your inbox or contact your administrator.",
+                  "Jika akun tersedia, email reset masuk antrean. Periksa kotak masuk atau hubungi administrator.",
+                )}
+          </div>
+        ) : (
+          <>
+            {reset ? (
+              <>
+                <Field
+                  label={t("New password", "Kata sandi baru")}
+                  hint={t(
+                    "12+ characters: uppercase, lowercase, number and symbol.",
+                    "12+ karakter: huruf besar, kecil, angka, dan simbol.",
+                  )}
+                >
+                  <input
+                    type="password"
+                    required
+                    minLength={12}
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </Field>
+                <Field
+                  label={t(
+                    "Authenticator code, if enabled",
+                    "Kode autentikator, jika aktif",
+                  )}
+                >
+                  <input
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                  />
+                </Field>
+              </>
+            ) : (
+              <Field label={t("Work email", "Email kerja")}>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </Field>
+            )}
+            <ErrorNotice error={error} />
+            <Button disabled={busy}>
+              {reset
+                ? t("Save password", "Simpan kata sandi")
+                : t("Send reset link", "Kirim tautan reset")}
+            </Button>
+          </>
+        )}
+        <div className="section">
+          <Link className="text-link" to="/">
+            ← {t("Back to sign in", "Kembali ke halaman masuk")}
+          </Link>
+        </div>
+      </form>
+    </AuthLayout>
+  );
+}
+function ChangePassword() {
+  const { user, refresh } = useAuth();
+  const { t } = useLocale();
+  const [currentPassword, setCurrent] = useState("");
+  const [newPassword, setNew] = useState("");
+  const [error, setError] = useState<unknown>(null);
+  const [busy, setBusy] = useState(false);
+  if (!user) return <Navigate to="/" replace />;
+  if (!user.mustChangePassword)
+    return (
+      <Navigate
+        to={user.role === "employee" ? "/employee" : "/admin"}
+        replace
+      />
+    );
+  return (
+    <AuthLayout>
+      <form
+        className="auth-form"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          try {
+            await apiRequest("/api/auth/change-password", {
+              method: "POST",
+              body: JSON.stringify({ currentPassword, newPassword }),
+            });
+            await refresh();
+          } catch (e) {
+            setError(e);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <h1>{t("Secure your account", "Amankan akun Anda")}</h1>
+        <p>
+          {t(
+            "Replace your temporary password before continuing.",
+            "Ganti kata sandi sementara sebelum melanjutkan.",
+          )}
+        </p>
+        <Field label={t("Temporary password", "Kata sandi sementara")}>
+          <input
+            type="password"
+            required
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(e) => setCurrent(e.target.value)}
+          />
+        </Field>
+        <Field
+          label={t("New password", "Kata sandi baru")}
+          hint={t(
+            "12+ characters with uppercase, lowercase, number and symbol.",
+            "12+ karakter dengan huruf besar, kecil, angka, dan simbol.",
+          )}
+        >
+          <input
+            type="password"
+            required
+            minLength={12}
+            autoComplete="new-password"
+            value={newPassword}
+            onChange={(e) => setNew(e.target.value)}
+          />
+        </Field>
+        <ErrorNotice error={error} />
+        <Button disabled={busy}>
+          {t("Save and continue", "Simpan dan lanjutkan")}
+        </Button>
+      </form>
+    </AuthLayout>
+  );
+}
+function Protected({ employee = false }: { employee?: boolean }) {
+  const { user, loading } = useAuth();
+  if (loading) return <Skeleton />;
+  if (!user) return <Navigate to="/" replace />;
+  if (user.mustChangePassword)
+    return <Navigate to="/change-password" replace />;
+  if ((user.role === "employee") !== employee)
+    return (
+      <Navigate
+        to={user.role === "employee" ? "/employee" : "/admin"}
+        replace
+      />
+    );
+  return <Outlet />;
+}
+function NotFound() {
+  const { t } = useLocale();
+  return (
+    <div className="public-wrap">
+      <Brand />
+      <Empty
+        title={t("Page not found", "Halaman tidak ditemukan")}
+        description={t(
+          "Open your workspace to continue.",
+          "Buka ruang kerja Anda untuk melanjutkan.",
+        )}
+        action={
+          <Link className="btn primary" to="/">
+            {t("Go to workspace", "Buka ruang kerja")}
+          </Link>
+        }
+      />
+    </div>
+  );
+}
 export default function App() {
-  return <Routes>
-    <Route path="/" element={<LoginPage/>}/>
-    <Route path="/admin" element={<AdminRoute><OverviewPage/></AdminRoute>}/>
-    <Route path="/admin/employees" element={<AdminRoute><EmployeesPage/></AdminRoute>}/>
-    <Route path="/admin/employees/:employeeId" element={<AdminRoute><EmployeeDetailPage/></AdminRoute>}/>
-    <Route path="/admin/campaigns" element={<AdminRoute><CampaignsPage/></AdminRoute>}/>
-    <Route path="/admin/campaigns/new" element={<AdminRoute><CampaignBuilderPage/></AdminRoute>}/>
-    <Route path="/admin/campaigns/:campaignId" element={<AdminRoute><CampaignDetailPage/></AdminRoute>}/>
-    <Route path="/admin/learning" element={<AdminRoute><LearningLibrary/></AdminRoute>}/>
-    <Route path="/admin/learning/:courseId" element={<AdminRoute><CourseDetailAdmin/></AdminRoute>}/>
-    <Route path="/admin/awareness" element={<AdminRoute><AwarenessPage/></AdminRoute>}/>
-    <Route path="/admin/awareness/methodology" element={<AdminRoute><ScoreMethodologyPage/></AdminRoute>}/>
-    <Route path="/admin/simulations" element={<Navigate to="/admin/campaigns" replace/>}/>
-    <Route path="/admin/integrations" element={<AdminRoute><IntegrationsPage/></AdminRoute>}/>
-    <Route path="/admin/settings" element={<AdminRoute><SettingsPage/></AdminRoute>}/>
-    <Route path="/admin/reports" element={<AdminRoute><ReportsPage/></AdminRoute>}/>
-    <Route path="/admin/reports/:reportId" element={<AdminRoute><ReportDetail/></AdminRoute>}/>
-    <Route path="/employee" element={<EmployeeRoute><EmployeeHome/></EmployeeRoute>}/>
-    <Route path="/employee/learning" element={<EmployeeRoute><MyLearningPage/></EmployeeRoute>}/>
-    <Route path="/employee/learning/:courseId" element={<LearningContent/>}/>
-    <Route path="/employee/quiz/:courseId" element={<QuizPage/>}/>
-    <Route path="/employee/quiz/:courseId/result" element={<QuizResult/>}/>
-    <Route path="/employee/quiz/:courseId/review" element={<EmployeeRoute><AnswerReview/></EmployeeRoute>}/>
-    <Route path="/employee/awareness" element={<EmployeeRoute><EmployeeAwareness/></EmployeeRoute>}/>
-    <Route path="/employee/assessment/baseline" element={<BaselineAssessment/>}/>
-    <Route path="/employee/certificates" element={<EmployeeRoute><CertificatesPage/></EmployeeRoute>}/>
-    <Route path="/employee/certificates/:courseId" element={<EmployeeRoute><CertificateDetail/></EmployeeRoute>}/>
-    <Route path="*" element={<Navigate to="/" replace/>}/>
-  </Routes>;
+  return (
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/forgot-password" element={<PasswordReset />} />
+      <Route path="/reset-password" element={<PasswordReset reset />} />
+      <Route path="/change-password" element={<ChangePassword />} />
+      <Route path="/verify/:id?" element={<VerifyCertificate />} />
+      <Route path="/simulation/:token" element={<Simulation />} />
+      <Route
+        path="/methodology"
+        element={
+          <div className="public-wrap">
+            <Methodology />
+          </div>
+        }
+      />
+      <Route element={<Protected />}>
+        <Route element={<Shell />}>
+          <Route path="/admin" element={<Overview />} />
+          <Route path="/admin/employees" element={<People />} />
+          <Route path="/admin/employees/:id" element={<EmployeeDetail />} />
+          <Route path="/admin/campaigns" element={<Campaigns />} />
+          <Route path="/admin/campaigns/new" element={<CampaignBuilder />} />
+          <Route path="/admin/campaigns/:id" element={<CampaignDetail />} />
+          <Route
+            path="/admin/campaigns/:id/edit"
+            element={<CampaignBuilder />}
+          />
+          <Route path="/admin/learning" element={<LearningLibrary />} />
+          <Route path="/admin/learning/new" element={<CourseBuilder />} />
+          <Route path="/admin/learning/:id" element={<CourseBuilder />} />
+          <Route path="/admin/awareness" element={<Awareness />} />
+          <Route path="/admin/reports" element={<Reports />} />
+          <Route path="/admin/reports/inbox" element={<PhishingReports />} />
+          <Route
+            path="/admin/reports/certificates"
+            element={<Certificates />}
+          />
+          <Route path="/admin/integrations" element={<Integrations />} />
+          <Route path="/admin/settings/:section?" element={<Settings />} />
+          <Route
+            path="/admin/content"
+            element={<Navigate to="/admin/learning" replace />}
+          />
+          <Route
+            path="/admin/automation"
+            element={<Navigate to="/admin/settings/health" replace />}
+          />
+          <Route
+            path="/admin/audit"
+            element={<Navigate to="/admin/settings/audit" replace />}
+          />
+        </Route>
+      </Route>
+      <Route element={<Protected employee />}>
+        <Route element={<Shell />}>
+          <Route path="/employee" element={<EmployeeHome />} />
+          <Route path="/employee/learning" element={<MyLearning />} />
+          <Route path="/employee/awareness" element={<MyAwareness />} />
+          <Route path="/employee/certificates" element={<Certificates />} />
+          <Route
+            path="/employee/report-phishing"
+            element={<PhishingReports />}
+          />
+          <Route path="/employee/account" element={<Account />} />
+        </Route>
+        <Route path="/employee/learning/:id" element={<LearningPlayer />} />
+        <Route path="/employee/learning/:id/quiz" element={<Quiz />} />
+        <Route path="/employee/learning/:id/result" element={<QuizResult />} />
+        <Route path="/employee/assessment/:id" element={<Assessment />} />
+      </Route>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 }

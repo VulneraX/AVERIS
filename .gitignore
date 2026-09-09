@@ -2,3 +2,7 @@ node_modules
 dist
 *.tsbuildinfo
 .DS_Store
+.env
+.data/
+test-results/
+playwright-report/
