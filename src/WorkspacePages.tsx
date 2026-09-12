@@ -408,6 +408,9 @@ export function Campaigns() {
         )}
         actions={
           <>
+            <Link className="btn secondary" to="/admin/human-risk/autopilot">
+              Continuous programs
+            </Link>
             <Button variant="secondary" onClick={() => setTemplates(true)}>
               {t("Use a template", "Gunakan templat")}
             </Button>
@@ -878,35 +881,38 @@ export function CampaignBuilder() {
             )}
             {step === 2 && (
               <>
-                <h2>
-                  {t("Choose learning modules", "Pilih modul pembelajaran")}
-                </h2>
-                <p>
-                  <small>
-                    {duration} {t("minutes total", "menit total")}
-                  </small>
-                </p>
+                <div className="builder-section-heading">
+                  <div>
+                    <h2>{t("Choose learning", "Pilih pembelajaran")}</h2>
+                    <p>{t("Select one or more published modules for this campaign.", "Pilih satu atau beberapa modul terbit untuk kampanye ini.")}</p>
+                  </div>
+                  <strong className="builder-total">{duration} {t("min total", "mnt total")}</strong>
+                </div>
                 {courses.length ? (
-                  courses.map((c: any) => (
-                    <label className="selection-row" key={c.id}>
-                      <input
-                        type="checkbox"
-                        checked={form.courseIds.includes(c.id)}
-                        onChange={() => toggle("courseIds", c.id)}
-                      />
-                      <div>
-                        <h3>{c.document.title}</h3>
-                        <p>{c.document.description}</p>
-                        <small>
-                          {c.document.category} · {c.document.duration}{" "}
-                          {t("min", "menit")} ·{" "}
-                          {t("Passing score", "Nilai kelulusan")}{" "}
-                          {c.document.passingScore}
-                        </small>
-                      </div>
-                      <Status value={c.document.difficulty} />
-                    </label>
-                  ))
+                  <div className="campaign-learning-grid">
+                    {courses.map((c: any) => (
+                      <label className={`campaign-learning-card ${form.courseIds.includes(c.id) ? "selected" : ""}`} key={c.id}>
+                        <input
+                          type="checkbox"
+                          checked={form.courseIds.includes(c.id)}
+                          onChange={() => toggle("courseIds", c.id)}
+                        />
+                        <div className="campaign-learning-card-main">
+                          <div className="campaign-learning-card-top">
+                            <span className="learning-origin">{c.isDefault ? t("AVERIS default", "Default AVERIS") : t("Created by your team", "Dibuat tim Anda")}</span>
+                            <Status value={c.document.difficulty} />
+                          </div>
+                          <h3>{c.document.title}</h3>
+                          <p>{c.document.description}</p>
+                          <div className="campaign-learning-meta">
+                            <span>{c.document.category}</span>
+                            <span>{c.document.duration} {t("min", "menit")}</span>
+                            <span>{t("Pass", "Lulus")} {c.document.passingScore}%</span>
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
                 ) : (
                   <Empty
                     title={t(
@@ -1122,7 +1128,7 @@ export function CampaignBuilder() {
                       : id
                         ? t("Save changes", "Simpan perubahan")
                         : canLaunch
-                          ? t("Launch campaign", "Luncurkan kampanye")
+                          ? t("Publish campaign", "Terbitkan kampanye")
                           : t(
                               "Save for admin review",
                               "Simpan untuk tinjauan admin",
@@ -1980,6 +1986,14 @@ export function EmployeeDetail() {
             description={`${d.user.department} · ${d.user.email}`}
             actions={
               <>
+                {actor?.role !== "manager" && (
+                  <Link
+                    className="btn secondary"
+                    to={`/admin/human-risk/people/${id}`}
+                  >
+                    Human Risk Profile
+                  </Link>
+                )}
                 <ActionLink to={`/admin/campaigns/new?employee=${id}`}>
                   {t("Assign learning", "Tugaskan materi")}
                 </ActionLink>

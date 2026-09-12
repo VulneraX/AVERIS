@@ -1,22 +1,39 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
-import App from "./App";
-import { AuthProvider } from "./auth";
-import { LocaleProvider } from "./ui";
+import { BrowserRouter, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "./ErrorBoundary";
+import LandingPage from "./marketing/LandingPage";
 import "./design-system.css";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+const WorkspaceApplication = lazy(() => import("./WorkspaceApplication"));
+function Site() {
+  const { pathname } = useLocation();
+  return pathname === "/" ? (
+    <LandingPage />
+  ) : (
+    <Suspense
+      fallback={
+        <div className="public-wrap" role="status">
+          Loading AVERIS…
+        </div>
+      }
+    >
+      <WorkspaceApplication />
+    </Suspense>
+  );
+}
+const root = document.getElementById("root")!;
+const application = (
   <React.StrictMode>
     <ErrorBoundary>
       <BrowserRouter>
-        <LocaleProvider>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        </LocaleProvider>
+        <Site />
       </BrowserRouter>
     </ErrorBoundary>
-  </React.StrictMode>,
+  </React.StrictMode>
 );
+if (window.location.pathname === "/" && root.hasChildNodes()) {
+  ReactDOM.hydrateRoot(root, application);
+} else {
+  ReactDOM.createRoot(root).render(application);
+}

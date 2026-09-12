@@ -1,3 +1,4 @@
+import { GlobalCreate } from "./intelligence/shared";
 import {
   createContext,
   cloneElement,
@@ -25,8 +26,10 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Moon,
   Settings,
   ShieldCheck,
+  Sun,
   Target,
   Users,
   X,
@@ -74,6 +77,24 @@ export function LanguageSwitch() {
         EN
       </button>
     </div>
+  );
+}
+export function ThemeSwitch() {
+  const [dark, setDark] = useState(() => localStorage.getItem("averis-theme") === "dark");
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+    localStorage.setItem("averis-theme", dark ? "dark" : "light");
+  }, [dark]);
+  return (
+    <button
+      className="icon-button"
+      type="button"
+      onClick={() => setDark((value) => !value)}
+      aria-label={dark ? "Use light theme" : "Use dark theme"}
+      title={dark ? "Light theme" : "Dark theme"}
+    >
+      {dark ? <Sun size={17} /> : <Moon size={17} />}
+    </button>
   );
 }
 export function Brand() {
@@ -134,6 +155,10 @@ const errors: Record<string, [string, string]> = {
   VALIDATION_ERROR: [
     "Check the required fields and their format.",
     "Periksa kolom wajib dan format isian.",
+  ],
+  COURSE_INCOMPLETE: [
+    "Complete the course fields before saving.",
+    "Lengkapi isian materi sebelum menyimpan.",
   ],
   NETWORK_ERROR: [
     "Unable to connect. Check your connection and retry.",
@@ -472,9 +497,32 @@ export function Tabs({
       {tabs.map(([key, label]) => (
         <button
           key={key}
+          type="button"
           role="tab"
           aria-selected={key === value}
-          tabIndex={0}
+          tabIndex={key === value ? 0 : -1}
+          onKeyDown={(e) => {
+            const index = tabs.findIndex(([id]) => id === key);
+            const next =
+              e.key === "ArrowRight"
+                ? (index + 1) % tabs.length
+                : e.key === "ArrowLeft"
+                  ? (index - 1 + tabs.length) % tabs.length
+                  : e.key === "Home"
+                    ? 0
+                    : e.key === "End"
+                      ? tabs.length - 1
+                      : null;
+            if (next !== null) {
+              e.preventDefault();
+              onChange(tabs[next][0]);
+              (
+                e.currentTarget.parentElement?.querySelectorAll("button")[
+                  next
+                ] as HTMLButtonElement
+              )?.focus();
+            }
+          }}
           onClick={() => onChange(key)}
         >
           {label}
@@ -494,15 +542,25 @@ export function Dialog({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const { t } = useLocale();
+  const titleId = useId();
   useEffect(() => {
+    const active = document.activeElement as HTMLElement;
     const d = ref.current;
     d?.showModal();
-    return () => d?.close();
+    return () => {
+      d?.close();
+      active?.focus();
+    };
   }, []);
   return (
-    <dialog ref={ref} className="dialog" onCancel={onClose}>
+    <dialog
+      ref={ref}
+      className="dialog"
+      aria-labelledby={titleId}
+      onCancel={onClose}
+    >
       <header>
-        <h2>{title}</h2>
+        <h2 id={titleId}>{title}</h2>
         <button
           className="icon-button"
           onClick={onClose}
@@ -702,7 +760,7 @@ export function Shell() {
         ["/employee/learning", t("Learning", "Pembelajaran"), BookOpen],
         [
           "/employee/awareness",
-          t("My Awareness", "Awareness Saya"),
+          t("My Security Profile", "Profil Keamanan Saya"),
           ChartNoAxesCombined,
         ],
         ["/employee/certificates", t("Certificates", "Sertifikat"), Award],
@@ -712,7 +770,12 @@ export function Shell() {
         ["/admin/employees", t("People", "Karyawan"), Users],
         ["/admin/campaigns", t("Campaigns", "Kampanye"), Target],
         ["/admin/learning", t("Learning", "Pembelajaran"), BookOpen],
-        ["/admin/awareness", "Awareness", ChartNoAxesCombined],
+        ["/admin/simulations", t("Simulations", "Simulasi"), ShieldCheck],
+        [
+          "/admin/human-risk",
+          t("Human Risk", "Risiko Manusia"),
+          ChartNoAxesCombined,
+        ],
         ["/admin/reports", t("Reports", "Laporan"), FileText],
       ];
   const current =
@@ -811,8 +874,10 @@ export function Shell() {
             {String(current[1])}
           </span>
           <div>
+            {!employee && user.role !== "manager" && <GlobalCreate />}
             <Notifications />
             <LanguageSwitch />
+            <ThemeSwitch />
             {employee ? (
               <Link className="report-action" to="/employee/report-phishing">
                 <Flag size={15} />
@@ -830,7 +895,9 @@ export function Shell() {
           <Outlet />
         </main>
         <footer className="workspace-footer">
-          <span>AVERIS · Measure Awareness. Reduce Human Risk.</span>
+          <span>
+            AVERIS · Measure Awareness. Understand Risk. Change Behavior.
+          </span>
           <Link to="/verify">
             {t("Verify certificate", "Verifikasi sertifikat")}
             <ArrowUpRight size={12} />

@@ -16,6 +16,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string, rememberMe: boolean, otp?: string) => Promise<AuthUser>;
+    devLogin: (role: 'admin' | 'superadmin' | 'manager' | 'user') => Promise<AuthUser>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -50,6 +51,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login: async (email, password, rememberMe, otp) => {
       const response = await apiRequest<{ user: AuthUser }>('/api/auth/login', {
         method: 'POST', body: JSON.stringify({ email, password, rememberMe, otp }),
+      });
+      setUser(response.user);
+      return response.user;
+    },
+    devLogin: async (role) => {
+      const response = await apiRequest<{ user: AuthUser }>('/api/auth/dev-login', {
+        method: 'POST', body: JSON.stringify({ role }),
       });
       setUser(response.user);
       return response.user;

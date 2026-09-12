@@ -7,6 +7,8 @@ AVERIS is a Security Awareness & Human Risk platform by **VulneraX** that helps 
 
 Panduan lengkap berbahasa Indonesia: [DOKUMENTASI_LENGKAP.md](DOKUMENTASI_LENGKAP.md). Implementasi, hasil pengujian, dan batas kesiapan produksi: [PRODUCT_MATURITY.md](PRODUCT_MATURITY.md).
 
+Public website, inquiry handling, and deployment notes: [Marketing website](docs/MARKETING.md).
+
 ## Overview
 
 Traditional security awareness programs often stop at training completion.
@@ -177,3 +179,7 @@ single-node support does not imply a PostgreSQL or multi-instance deployment.
 All error responses use `{ "error": { "code", "message", "fields"? } }`.
 Mutation inputs are validated with Zod. Authentication is rate limited and all
 successful, failed, or denied security-relevant activity is written to `audit_logs`.
+
+## AVERIS 2.0
+
+Human Risk Intelligence, Content Studio, adaptive practice, coaching, cohorts, controlled Autopilot, and signed signal ingestion are implemented. AI remains unconfigured by default. See [AVERIS 2.0 implementation and operations](docs/AVERIS-2.md) for the exact capabilities, risk formula, setup, and remaining external integration requirements.

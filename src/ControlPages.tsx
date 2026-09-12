@@ -1,3 +1,4 @@
+import { ReportTriage } from "./intelligence/ReportTriage";
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "./api";
@@ -242,6 +243,7 @@ export function PhishingReports() {
             {selected.sender} · {label(selected.channel)}
           </p>
           <div className="lesson-prose">{selected.description}</div>
+          {canReview && <ReportTriage reportId={selected.id} />}
           <ErrorNotice error={error} />
           {canReview ? (
             <form

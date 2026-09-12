@@ -848,3 +848,445 @@ test("scheduled campaigns activate once, blocked audiences do not stop other wor
     1,
   );
 });
+
+const intel = (path, actor = owner, body, method) =>
+  ws("/intelligence" + path, actor.cookie, body, method);
+test("intelligence keeps AI disabled, evidence scoped, and employee risk private", async () => {
+  const settings = await intel("/settings");
+  assert.equal(settings.status, 200);
+  assert.equal(settings.data.settings.mode, "Observe");
+  assert.equal(settings.data.provider.enabled, false);
+  assert.equal((await intel("/profiles", employee)).status, 403);
+  assert.equal((await intel("/profiles", manager)).status, 403);
+  assert.equal((await intel(`/profiles/${otherTenant.id}`)).status, 404);
+  const context = await intel(
+    `/profiles/${other.id}/context`,
+    owner,
+    {
+      businessRole: "Payment approver",
+      location: "Makassar",
+      impact: 75,
+      privileged: true,
+      rationale: "Approves payments for the finance department.",
+    },
+    "PUT",
+  );
+  assert.equal(context.status, 200, JSON.stringify(context.data));
+  const signal = {
+    userId: other.id,
+    kind: "exposure_observed",
+    topic: "BEC",
+    value: 80,
+    sourceId: "security-incident-1",
+    description: "Verified targeted payment request exposure.",
+    occurredAt: new Date().toISOString(),
+  };
+  const first = await intel("/signals", owner, signal);
+  assert.equal(first.status, 201);
+  assert.equal((await intel("/signals", owner, signal)).data.id, first.data.id);
+  assert.equal(
+    (await intel("/signals", owner, { ...signal, userId: otherTenant.id }))
+      .status,
+    404,
+  );
+  assert.equal(
+    (
+      await intel("/signals", owner, {
+        ...signal,
+        occurredAt: "2099-01-01T00:00:00.000Z",
+      })
+    ).status,
+    400,
+  );
+  const profile = (await intel(`/profiles/${other.id}`)).data.profile;
+  assert.equal(profile.factors.impact, 75);
+  assert.equal(profile.factors.threat, 80);
+  assert.ok(profile.ledger.every((e) => e.source && e.source_id));
+  const me = (await intel("/me", other)).data;
+  for (const key of ["score", "risk", "factors", "ledger", "drivers", "label"])
+    assert.equal(key in me, false);
+  assert.ok(me.awareness);
+  assert.ok(me.level);
+  assert.ok(me.skills);
+  const generated = await intel("/studios", owner, {
+    kind: "content",
+    topic: "BEC",
+    generate: true,
+  });
+  assert.equal(generated.status, 503);
+  assert.equal(generated.data.error.code, "AI_UNCONFIGURED");
+  assert.equal(
+    (await intel("/sources/url", owner, { url: "https://127.0.0.1/private" }))
+      .status,
+    400,
+  );
+});
+
+test("studio review is versioned, publication gated, and source text preserved", async () => {
+  const source = "Policy guidance. ".repeat(1600);
+  let draft = (
+    await intel("/studios", owner, {
+      kind: "content",
+      topic: "BEC",
+      title: "Policy to practical decisions",
+      sourceText: source,
+      sourceLabel: "Finance policy",
+    })
+  ).data.draft;
+  assert.equal(draft.status, "Draft");
+  assert.equal(draft.document.lessons.map((l) => l.content).join(""), source);
+  assert.equal((await intel(`/studios/${draft.id}`, otherTenant)).status, 404);
+  assert.equal(
+    (
+      await intel(`/studios/${draft.id}/action`, owner, {
+        action: "publish",
+        version: draft.version,
+        acknowledged: true,
+      })
+    ).status,
+    409,
+  );
+  let response = await intel(`/studios/${draft.id}/action`, owner, {
+    action: "review",
+    version: draft.version,
+    acknowledged: true,
+  });
+  assert.equal(response.status, 200, JSON.stringify(response.data));
+  draft = response.data.draft;
+  const invalid = {
+    ...draft.document,
+    questions: [draft.document.questions[0], draft.document.questions[0]],
+  };
+  assert.equal(
+    (
+      await intel(
+        `/studios/${draft.id}`,
+        owner,
+        { version: draft.version, document: invalid },
+        "PUT",
+      )
+    ).status,
+    400,
+  );
+  response = await intel(
+    `/studios/${draft.id}`,
+    owner,
+    {
+      version: draft.version,
+      document: { ...draft.document, title: "Updated verified payment policy" },
+    },
+    "PUT",
+  );
+  assert.equal(response.status, 200);
+  draft = response.data.draft;
+  assert.equal(draft.status, "Draft");
+  assert.equal(draft.reviewed_by, null);
+  assert.equal(
+    (
+      await intel(
+        `/studios/${draft.id}`,
+        owner,
+        { version: 1, document: draft.document },
+        "PUT",
+      )
+    ).status,
+    409,
+  );
+  for (const action of ["review", "approve", "publish"]) {
+    response = await intel(`/studios/${draft.id}/action`, owner, {
+      action,
+      version: draft.version,
+      acknowledged: true,
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    draft = response.data.draft;
+  }
+  assert.equal(draft.status, "Published");
+  assert.ok(draft.published_revision_id);
+  assert.equal(
+    database
+      .prepare("SELECT status FROM course_revisions WHERE id=?")
+      .get(draft.published_revision_id).status,
+    "Published",
+  );
+  assert.equal(
+    (
+      await intel(
+        `/studios/${draft.id}`,
+        owner,
+        { version: draft.version, document: draft.document },
+        "PUT",
+      )
+    ).status,
+    409,
+  );
+});
+
+test("approved practice is private, safe, idempotent, and rewards the recorded decision", async () => {
+  let draft = (
+    await intel("/studios", owner, {
+      kind: "simulation",
+      topic: "BEC",
+      channel: "Email",
+      title: "Payment verification practice",
+    })
+  ).data.draft;
+  assert.equal(
+    (
+      await intel(`/studios/${draft.id}/assign`, owner, {
+        userIds: [other.id],
+        acknowledged: true,
+      })
+    ).status,
+    409,
+  );
+  for (const action of ["review", "approve"])
+    draft = (
+      await intel(`/studios/${draft.id}/action`, owner, {
+        action,
+        version: draft.version,
+        acknowledged: true,
+      })
+    ).data.draft;
+  assert.equal(
+    (
+      await intel(`/studios/${draft.id}/assign`, owner, {
+        userIds: [otherTenant.id],
+        acknowledged: true,
+      })
+    ).status,
+    404,
+  );
+  const assignment = await intel(`/studios/${draft.id}/assign`, owner, {
+    userIds: [other.id],
+    acknowledged: true,
+  });
+  assert.equal(assignment.status, 201, JSON.stringify(assignment.data));
+  const p = database
+    .prepare("SELECT * FROM practice_assignments WHERE draft_id=?")
+    .get(draft.id);
+  assert.ok(p);
+  assert.equal((await intel(`/practice/${p.id}`, employee)).status, 404);
+  const initial = await intel(`/practice/${p.id}`, other);
+  assert.equal(initial.data.coaching, null);
+  assert.equal(initial.data.practice.indicators, undefined);
+  assert.equal(
+    (await intel(`/practice/${p.id}/send`, owner, { acknowledged: true })).data
+      .error.code,
+    "SMTP_UNCONFIGURED",
+  );
+  await intel(`/practice/${p.id}/event`, other, { event: "opened" });
+  await intel(`/practice/${p.id}/event`, other, { event: "clicked" });
+  await intel(`/practice/${p.id}/event`, other, { event: "reported" });
+  await intel(`/practice/${p.id}/event`, other, { event: "opened" });
+  const completed = database
+    .prepare("SELECT * FROM practice_assignments WHERE id=?")
+    .get(p.id);
+  assert.equal(completed.status, "Completed");
+  assert.ok(completed.clicked_at);
+  assert.equal(completed.reported_at, null);
+  assert.equal(
+    database
+      .prepare("SELECT COUNT(*) n FROM risk_signals WHERE source_id=?")
+      .get(p.id).n,
+    1,
+  );
+  assert.ok((await intel(`/practice/${p.id}`, other)).data.coaching);
+  assert.equal(
+    (
+      await intel(`/practice/${p.id}/event`, other, {
+        event: "clicked",
+        password: "must-not-accept",
+      })
+    ).status,
+    400,
+  );
+});
+
+test("signed connector enforces exact bytes, timestamp, tenant, delivery and event deduplication", async () => {
+  const { createHmac } = await import("node:crypto");
+  const connector = (
+    await intel("/connectors", owner, { name: "Verified security events" })
+  ).data;
+  const event = {
+    userId: other.id,
+    kind: "identity_verified",
+    topic: "MFA",
+    sourceId: "identity-event-7",
+    description: "Verified authentication protection from the source system.",
+    occurredAt: new Date().toISOString(),
+  };
+  const signed = async (
+    events,
+    id = "delivery-000001",
+    stamp = String(Date.now()),
+    tamper = false,
+  ) => {
+    const body = JSON.stringify({ events }, null, 2);
+    const signature = createHmac("sha256", connector.signingSecret)
+      .update(`${stamp}.${id}.${body}`)
+      .digest("hex");
+    const response = await fetch(url + connector.endpoint, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${connector.token}`,
+        "x-averis-timestamp": stamp,
+        "x-averis-delivery-id": id,
+        "x-averis-signature": signature,
+      },
+      body: tamper ? body + " " : body,
+    });
+    return { status: response.status, data: await response.json() };
+  };
+  assert.equal(
+    (await signed([event], "delivery-tamper", String(Date.now()), true)).status,
+    401,
+  );
+  assert.equal(
+    (await signed([event], "delivery-expired", String(Date.now() - 600001)))
+      .status,
+    401,
+  );
+  assert.equal(
+    (await signed([{ ...event, userId: otherTenant.id }], "delivery-foreign"))
+      .status,
+    404,
+  );
+  assert.equal((await signed([event])).data.accepted, 1);
+  assert.equal((await signed([event])).data.duplicate, true);
+  assert.equal(
+    (await signed([event], "delivery-repeat-event")).data.accepted,
+    1,
+  );
+  assert.equal(
+    database
+      .prepare(
+        "SELECT COUNT(*) n FROM risk_signals WHERE source=? AND source_id=?",
+      )
+      .get(`Connector: ${connector.id}`, event.sourceId).n,
+    1,
+  );
+  const listing = (await intel("/integrations")).data;
+  assert.equal(JSON.stringify(listing).includes(connector.token), false);
+  await intel(`/connectors/${connector.id}/revoke`, owner, {});
+  assert.equal((await signed([event], "delivery-revoked")).status, 401);
+});
+
+test("autopilot respects Observe, explicit approval, cadence, wait, and follow-up outcomes", async () => {
+  const cohort = (
+    await intel("/cohorts", owner, {
+      name: "Payment practice cohort",
+      description: "Verified BEC behavior signals",
+      conditions: {
+        topic: "BEC",
+        signalKind: "simulation_clicked",
+        minimumCount: 2,
+        windowDays: 60,
+      },
+    })
+  ).data;
+  const policy = (
+    await intel("/policies", owner, {
+      name: "Payment verification reinforcement",
+      goal: "Support independent payment verification",
+      cohortId: cohort.id,
+      topic: "BEC",
+      action: "Coaching",
+      waitDays: 1,
+      cadenceDays: 7,
+      continuous: true,
+    })
+  ).data;
+  const orgId = owner.organization.id;
+  const now = new Date().toISOString();
+  for (let i = 0; i < 2; i++)
+    database
+      .prepare(
+        "INSERT INTO risk_signals(id,organization_id,user_id,kind,topic,source,source_id,description,occurred_at,ingested_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+      )
+      .run(
+        `autopilot-test-${i}`,
+        orgId,
+        other.id,
+        "simulation_clicked",
+        "BEC",
+        "Verified test fixture",
+        `fixture-${i}`,
+        "Controlled decision requires support.",
+        now,
+        now,
+      );
+  const worker = registerWorkspace(express(), {
+    db: database,
+    sessionSecret: secret,
+    authRequired: (_req, _res, next) => next(),
+    allowRoles: () => (_req, _res, next) => next(),
+    validate: (schema, value) => schema.parse(value),
+    writeAudit: () => {},
+  });
+  await intel(`/policies/${policy.id}/approval`, owner, {
+    enabled: true,
+    version: 1,
+    acknowledged: true,
+  });
+  await worker.tick();
+  assert.equal(
+    database
+      .prepare("SELECT COUNT(*) n FROM intervention_steps WHERE policy_id=?")
+      .get(policy.id).n,
+    0,
+  );
+  const settings = (await intel("/settings")).data.settings;
+  await intel(
+    "/settings",
+    owner,
+    {
+      mode: "Automate",
+      minimumSample: 5,
+      retentionDays: 365,
+      cadenceDays: 30,
+      aiEnabled: false,
+      version: settings.version,
+      acknowledged: true,
+    },
+    "PUT",
+  );
+  await worker.tick();
+  await worker.tick();
+  let steps = database
+    .prepare("SELECT * FROM intervention_steps WHERE policy_id=?")
+    .all(policy.id);
+  assert.equal(steps.length, 1);
+  assert.equal(steps[0].status, "Waiting");
+  database
+    .prepare("UPDATE intervention_steps SET due_at=? WHERE id=?")
+    .run(new Date(Date.now() - 1000).toISOString(), steps[0].id);
+  await worker.tick();
+  let step = database
+    .prepare("SELECT * FROM intervention_steps WHERE id=?")
+    .get(steps[0].id);
+  assert.equal(step.status, "Practice assigned");
+  await intel(`/practice/${step.result}/event`, other, { event: "reported" });
+  database
+    .prepare("UPDATE intervention_steps SET due_at=? WHERE id=?")
+    .run(new Date(Date.now() - 1000).toISOString(), step.id);
+  await worker.tick();
+  step = database
+    .prepare("SELECT * FROM intervention_steps WHERE id=?")
+    .get(step.id);
+  assert.equal(step.status, "Positive behavior");
+  const outcomes = (await intel("/outcomes", manager)).data.outcomes;
+  assert.ok(
+    outcomes.every(
+      (o) =>
+        o.users >= 5 ||
+        (o.before.clickRate === null && o.after.clickRate === null),
+    ),
+  );
+  await intel(`/policies/${policy.id}/approval`, owner, {
+    enabled: false,
+    version: 2,
+    acknowledged: true,
+  });
+});

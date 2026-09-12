@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 async function login(page: Page, email = "owner@acme.co.id") {
-  await page.goto("/");
+  await page.goto("/login");
   await page.getByRole("button", { name: "EN", exact: true }).click();
   await page.getByLabel("Work email", { exact: true }).fill(email);
   await page
@@ -135,7 +135,9 @@ test("campaign → individual learning → assessment → certificate → phishi
     .getByLabel("Why does this look suspicious?", { exact: true })
     .fill("The sender is asking for my password on an unfamiliar site.");
   await page.getByRole("button", { name: "Submit report" }).click();
-  await expect(page.getByRole("status")).toContainText("Report received");
+  await expect(page.locator(".notice[role=status]")).toContainText(
+    "Report received",
+  );
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await login(page);
   await page.getByRole("link", { name: "Security inbox", exact: true }).click();
@@ -217,7 +219,10 @@ test("navigation, localization, mobile learning and WCAG basics", async ({
   await expect(
     page.getByRole("navigation", { name: "Primary navigation" }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Certificates", exact: true }).click();
+  await page
+    .getByRole("navigation", { name: "Primary navigation" })
+    .getByRole("link", { name: "Certificates", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Certificates", exact: true }),
   ).toBeVisible();

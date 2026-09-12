@@ -14,6 +14,7 @@ import { processEmailOutbox, registerPlatformRoutes, runScheduler } from './plat
 import { registerWorkspace } from './workspace.mjs';
 import { verifyMfa } from './identity.mjs';
 import { registerSSO } from './sso.mjs';
+import { registerMarketing } from './marketing.mjs';
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
@@ -41,7 +42,7 @@ app.use(helmet({
     },
   } : false,
 }));
-app.use(express.json({ limit: '3mb' }));
+app.use(express.json({ limit: '3mb', verify: (req, _res, body) => { req.rawBody = body; } }));
 app.use(cookieParser());
 app.use((req, res, next) => {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
@@ -212,6 +213,8 @@ app.use('/api', (req,res,next) => {
   if(/^\/(product-state|product-actions|admin|quiz|audit-logs)(\/|$)/.test(req.path)||/^\/public\/(certificates|simulations)\//.test(req.path))return res.status(410).json({error:{code:'API_RETIRED',message:'Use the current workspace API.'}});
   next();
 });
+registerMarketing(app, db);
+
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
 app.post('/api/auth/login', loginLimiter, (req, res, next) => {
@@ -249,6 +252,36 @@ app.post('/api/auth/login', loginLimiter, (req, res, next) => {
     writeAudit({
       organizationId: user.organization_id, actorUserId: user.id, action: 'auth.login',
       entityType: 'session', entityId: sessionId, metadata: { rememberMe: input.rememberMe }, ...requestMeta(req),
+    });
+    res.json({ user: publicUser(user) });
+  } catch (error) { next(error); }
+});
+app.post('/api/auth/dev-login', (req, res, next) => {
+  try {
+    if (production) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Not found.' } });
+    const roleMap = { admin: 'admin', superadmin: 'super_admin', manager: 'manager', user: 'employee' };
+    const role = roleMap[req.body?.role];
+    if (!role) return res.status(400).json({ error: { code: 'INVALID_ROLE', message: 'Unknown development role.' } });
+    const user = db.prepare(`
+      SELECT u.*, o.name AS organization_name, o.slug AS organization_slug
+      FROM users u JOIN organizations o ON o.id = u.organization_id
+      WHERE u.role = ? AND u.active = 1 ORDER BY u.created_at LIMIT 1
+    `).get(role);
+    if (!user) return res.status(404).json({ error: { code: 'USER_NOT_FOUND', message: 'No active account exists for this role.' } });
+    const token = randomBytes(32).toString('base64url');
+    const durationMs = 2 * 60 * 60 * 1000;
+    const expiresAt = new Date(Date.now() + durationMs).toISOString();
+    const sessionId = randomUUID();
+    db.prepare(`
+      INSERT INTO sessions (id, user_id, token_hash, expires_at, ip_address, user_agent)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(sessionId, user.id, hashToken(token), expiresAt, req.ip, req.get('user-agent')?.slice(0, 500));
+    res.cookie(sessionCookie, token, {
+      httpOnly: true, secure: production, sameSite: 'strict', path: '/', maxAge: durationMs,
+    });
+    writeAudit({
+      organizationId: user.organization_id, actorUserId: user.id, action: 'auth.dev_login',
+      entityType: 'session', entityId: sessionId, metadata: { role }, ...requestMeta(req),
     });
     res.json({ user: publicUser(user) });
   } catch (error) { next(error); }

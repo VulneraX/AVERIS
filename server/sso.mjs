@@ -89,7 +89,7 @@ export function registerSSO(
         }).href,
       );
     } catch {
-      res.redirect("/?sso=unavailable");
+      res.redirect("/login?sso=unavailable");
     }
   });
   app.get("/api/auth/sso/callback", loginLimiter, async (req, res) => {
@@ -188,9 +188,9 @@ export function registerSSO(
           maxAge: duration,
         });
       })();
-      res.redirect("/");
+      res.redirect("/login");
     } catch {
-      res.redirect("/?sso=failed");
+      res.redirect("/login?sso=failed");
     }
   });
 }

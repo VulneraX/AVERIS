@@ -1,3 +1,4 @@
+import { RiskMethodology } from "./intelligence/Methodology";
 import { useState } from "react";
 import { Link, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
@@ -47,6 +48,23 @@ import {
   Simulation,
 } from "./ControlPages";
 
+import { IntelligenceOverview } from "./intelligence/Overview";
+import { HumanRisk, HumanRiskProfile } from "./intelligence/HumanRisk";
+import {
+  Cohorts,
+  ThreatFeed,
+  Autopilot,
+  IntelligenceAudit,
+} from "./intelligence/Programs";
+import { Studios, StudioEditor, Simulations } from "./intelligence/Studios";
+import {
+  EmployeeHome2,
+  SecurityProfile,
+  PracticeChallenge,
+} from "./intelligence/EmployeeSecurity";
+import { OutcomeReports } from "./intelligence/Reports";
+import { Connections } from "./intelligence/Connections";
+
 function AuthLayout({ children }: { children: React.ReactNode }) {
   const { t } = useLocale();
   return (
@@ -54,11 +72,15 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
       <section className="auth-story">
         <Brand />
         <div>
-          <span className="eyebrow">SECURITY AWARENESS & HUMAN RISK</span>
+          <span className="eyebrow">HUMAN RISK INTELLIGENCE</span>
           <h1>
             Measure Awareness.
             <br />
-            <span>Reduce Human Risk.</span>
+            <span>
+              Understand Risk.
+              <br />
+              Change Behavior.
+            </span>
           </h1>
           <p>
             {t(
@@ -78,7 +100,7 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
 }
 function Login() {
   const options = useData("/api/auth/options");
-  const { user, loading, login } = useAuth();
+  const { user, loading, login, devLogin } = useAuth();
   const { t } = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -86,6 +108,7 @@ function Login() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+    const [devBusy, setDevBusy] = useState<string | null>(null);
   if (loading) return <Skeleton />;
   if (user)
     return (
@@ -190,6 +213,39 @@ function Login() {
               "Lanjutkan dengan SSO organisasi",
             )}
           </a>
+        )}
+        {import.meta.env.DEV && (
+          <div className="dev-login-panel">
+            <strong>Development quick login</strong>
+            <small>Temporary access for local testing only.</small>
+            <div className="dev-login-grid">
+              {([
+                ["superadmin", "Superadmin"],
+                ["admin", "Admin"],
+                ["manager", "Manager"],
+                ["user", "User / Employee"],
+              ] as const).map(([role, label]) => (
+                <button
+                  type="button"
+                  key={role}
+                  disabled={Boolean(devBusy)}
+                  onClick={async () => {
+                    setDevBusy(role);
+                    setError(null);
+                    try {
+                      await devLogin(role);
+                    } catch (e) {
+                      setError(e);
+                    } finally {
+                      setDevBusy(null);
+                    }
+                  }}
+                >
+                  {devBusy === role ? "Opening…" : label}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
         <div className="section">
           <Link className="text-link" to="/verify">
@@ -318,7 +374,7 @@ function PasswordReset({ reset = false }: { reset?: boolean }) {
           </>
         )}
         <div className="section">
-          <Link className="text-link" to="/">
+          <Link className="text-link" to="/login">
             ← {t("Back to sign in", "Kembali ke halaman masuk")}
           </Link>
         </div>
@@ -333,7 +389,7 @@ function ChangePassword() {
   const [newPassword, setNew] = useState("");
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (!user.mustChangePassword)
     return (
       <Navigate
@@ -404,7 +460,7 @@ function ChangePassword() {
 function Protected({ employee = false }: { employee?: boolean }) {
   const { user, loading } = useAuth();
   if (loading) return <Skeleton />;
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   if (user.mustChangePassword)
     return <Navigate to="/change-password" replace />;
   if ((user.role === "employee") !== employee)
@@ -415,6 +471,22 @@ function Protected({ employee = false }: { employee?: boolean }) {
       />
     );
   return <Outlet />;
+}
+function SecurityAdmin({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  return user?.role === "manager" ? (
+    <Empty
+      title="Security administrator access required"
+      description="Use Overview and Reports to review organization trends and program evidence."
+      action={
+        <Link className="btn primary" to="/admin">
+          Open Overview
+        </Link>
+      }
+    />
+  ) : (
+    children
+  );
 }
 function NotFound() {
   const { t } = useLocale();
@@ -428,7 +500,7 @@ function NotFound() {
           "Buka ruang kerja Anda untuk melanjutkan.",
         )}
         action={
-          <Link className="btn primary" to="/">
+          <Link className="btn primary" to="/login">
             {t("Go to workspace", "Buka ruang kerja")}
           </Link>
         }
@@ -439,10 +511,11 @@ function NotFound() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<PasswordReset />} />
       <Route path="/reset-password" element={<PasswordReset reset />} />
       <Route path="/change-password" element={<ChangePassword />} />
+      <Route path="/risk-methodology" element={<RiskMethodology />} />
       <Route path="/verify/:id?" element={<VerifyCertificate />} />
       <Route path="/simulation/:token" element={<Simulation />} />
       <Route
@@ -455,7 +528,7 @@ export default function App() {
       />
       <Route element={<Protected />}>
         <Route element={<Shell />}>
-          <Route path="/admin" element={<Overview />} />
+          <Route path="/admin" element={<IntelligenceOverview />} />
           <Route path="/admin/employees" element={<People />} />
           <Route path="/admin/employees/:id" element={<EmployeeDetail />} />
           <Route path="/admin/campaigns" element={<Campaigns />} />
@@ -466,16 +539,95 @@ export default function App() {
             element={<CampaignBuilder />}
           />
           <Route path="/admin/learning" element={<LearningLibrary />} />
-          <Route path="/admin/learning/new" element={<CourseBuilder />} />
+          <Route
+            path="/admin/learning/new"
+            element={
+              <SecurityAdmin>
+                <Studios />
+              </SecurityAdmin>
+            }
+          />
           <Route path="/admin/learning/:id" element={<CourseBuilder />} />
+          <Route
+            path="/admin/studio"
+            element={
+              <SecurityAdmin>
+                <Studios />
+              </SecurityAdmin>
+            }
+          />
+          <Route
+            path="/admin/studio/:id"
+            element={
+              <SecurityAdmin>
+                <StudioEditor />
+              </SecurityAdmin>
+            }
+          />
+          <Route
+            path="/admin/simulations"
+            element={
+              <SecurityAdmin>
+                <Simulations />
+              </SecurityAdmin>
+            }
+          />
+          <Route path="/admin/human-risk" element={<HumanRisk />} />
+          <Route
+            path="/admin/human-risk/people/:id"
+            element={
+              <SecurityAdmin>
+                <HumanRiskProfile />
+              </SecurityAdmin>
+            }
+          />
+          <Route
+            path="/admin/human-risk/cohorts"
+            element={
+              <SecurityAdmin>
+                <Cohorts />
+              </SecurityAdmin>
+            }
+          />
+          <Route
+            path="/admin/human-risk/threats"
+            element={
+              <SecurityAdmin>
+                <ThreatFeed />
+              </SecurityAdmin>
+            }
+          />
+          <Route
+            path="/admin/human-risk/autopilot"
+            element={
+              <SecurityAdmin>
+                <Autopilot />
+              </SecurityAdmin>
+            }
+          />
+          <Route
+            path="/admin/human-risk/audit"
+            element={
+              <SecurityAdmin>
+                <IntelligenceAudit />
+              </SecurityAdmin>
+            }
+          />
           <Route path="/admin/awareness" element={<Awareness />} />
-          <Route path="/admin/reports" element={<Reports />} />
+          <Route path="/admin/reports" element={<OutcomeReports />} />
           <Route path="/admin/reports/inbox" element={<PhishingReports />} />
           <Route
             path="/admin/reports/certificates"
             element={<Certificates />}
           />
-          <Route path="/admin/integrations" element={<Integrations />} />
+          <Route
+            path="/admin/integrations"
+            element={
+              <SecurityAdmin>
+                <Connections />
+              </SecurityAdmin>
+            }
+          />
           <Route path="/admin/settings/:section?" element={<Settings />} />
           <Route
             path="/admin/content"
@@ -483,7 +635,7 @@ export default function App() {
           />
           <Route
             path="/admin/automation"
-            element={<Navigate to="/admin/settings/health" replace />}
+            element={<Navigate to="/admin/human-risk/autopilot" replace />}
           />
           <Route
             path="/admin/audit"
@@ -493,9 +645,13 @@ export default function App() {
       </Route>
       <Route element={<Protected employee />}>
         <Route element={<Shell />}>
-          <Route path="/employee" element={<EmployeeHome />} />
+          <Route path="/employee" element={<EmployeeHome2 />} />
           <Route path="/employee/learning" element={<MyLearning />} />
-          <Route path="/employee/awareness" element={<MyAwareness />} />
+          <Route
+            path="/employee/challenges/:id"
+            element={<PracticeChallenge />}
+          />
+          <Route path="/employee/awareness" element={<SecurityProfile />} />
           <Route path="/employee/certificates" element={<Certificates />} />
           <Route
             path="/employee/report-phishing"

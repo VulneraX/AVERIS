@@ -16,6 +16,7 @@ import { rateLimit } from "express-rate-limit";
 import { migrate } from "./migrations.mjs";
 import { newTotpSecret, totp, seal, unseal, verifyMfa } from "./identity.mjs";
 import { ssoConfigured } from "./sso.mjs";
+import { registerIntelligence } from "./intelligence/routes.mjs";
 
 const now = () => new Date().toISOString();
 const id = () => randomUUID();
@@ -721,7 +722,13 @@ export function registerWorkspace(app, deps) {
           org(req),
           r.course_id,
         );
-        return { ...r, document_json: undefined, document: d, ...usage };
+        return {
+          ...r,
+          document_json: undefined,
+          document: d,
+          isDefault: r.course_id.startsWith("averis-v2:"),
+          ...usage,
+        };
       }),
     });
   });
@@ -1064,8 +1071,9 @@ export function registerWorkspace(app, deps) {
           u.id,
           "simulation",
           {
-            title: p.simulation,
-            text: `Security learning exercise\n${baseUrl()}/simulation/${token}`,
+            title: `${p.simulation} — tindakan diperlukan`,
+            text: `Halo ${u.name || "rekan"},\n\nAnda menerima notifikasi yang memerlukan perhatian. Tinjau pesan ini dengan teliti sebelum membuka tautan atau membagikan informasi.\n\nBuka simulasi: ${baseUrl()}/simulation/${token}\n\nIni adalah latihan keamanan resmi AVERIS. Jangan memasukkan password atau data rahasia.`,
+            html: `<div style="font-family:Arial,sans-serif;max-width:620px;color:#17202a"><div style="border-bottom:4px solid #c6283d;padding:18px 0"><strong style="letter-spacing:2px;color:#c6283d">AVERIS SECURITY NOTICE</strong></div><p>Halo ${String(u.name || "rekan").replace(/[<>]/g, "")},</p><p>Anda menerima notifikasi yang memerlukan perhatian. Periksa pengirim, konteks, alamat tautan, dan urgensi pesan sebelum mengambil tindakan.</p><div style="background:#f8f5f5;border:1px solid #e3d7d9;padding:16px;margin:20px 0"><strong>Action required</strong><p style="margin:8px 0 0">Tinjau detail notifikasi keamanan organisasi Anda.</p></div><p><a href="${baseUrl()}/simulation/${token}" style="display:inline-block;background:#c6283d;color:#fff;padding:12px 18px;text-decoration:none;font-weight:bold">Tinjau notifikasi</a></p><p style="font-size:12px;color:#667085">Jika Anda ragu, gunakan tombol Report Phishing di AVERIS. Jangan pernah memasukkan password pada halaman simulasi.</p><hr/><p style="font-size:11px;color:#98a2b3">Latihan simulasi keamanan resmi AVERIS · Tidak ada kredensial yang dikumpulkan</p></div>`,
             targetId,
           },
           `simulation:${p.id}:${u.id}`,
@@ -1522,6 +1530,7 @@ export function registerWorkspace(app, deps) {
   // Remaining routes are registered below in the same tenant-owned service.
   registerOperations();
   registerIdentityAndSettings();
+  const intelligence = registerIntelligence(app, { ...deps, scoreFor, scoreEvent, people, notify, queue, activate });
   route("get", "/groups", viewers, (req, res) =>
     res.json({
       groups: q(
@@ -2716,6 +2725,7 @@ export function registerWorkspace(app, deps) {
 
   async function tick() {
     try {
+      intelligence.tick();
       transaction(() => {
         for (const s of q("SELECT * FROM tenant_settings")) {
           const cutoff = new Date(
@@ -2870,6 +2880,7 @@ export function registerWorkspace(app, deps) {
             to: u.email,
             subject: payload.title,
             text: payload.text,
+            html: payload.html || undefined,
             messageId: `<${job.id}@averis.local>`,
           });
           transaction(() => {

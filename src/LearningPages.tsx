@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Check, Plus, Save, Trash2 } from "lucide-react";
 import { useAuth } from "./auth";
 import {
   ActionLink,
@@ -44,20 +44,10 @@ type CourseDocument = {
   passingScore: number;
   maxAttempts: number;
   retryMinutes: number;
-  lessons: Array<{
-    title: string;
-    content: string;
-    kind: "Article" | "Scenario" | "Checklist" | "Security tip";
-  }>;
+  lessons: Array<{ title: string; content: string; kind: "Article" | "Scenario" | "Checklist" | "Security tip" }>;
   questions: Question[];
 };
-const blankQuestion: Question = {
-  prompt: "",
-  type: "choice",
-  options: ["", ""],
-  correct: [0],
-  explanation: "",
-};
+const blankQuestion: Question = { prompt: "", type: "choice", options: ["", ""], correct: [0], explanation: "" };
 const blankCourse: CourseDocument = {
   title: "",
   category: "",
@@ -81,131 +71,18 @@ export function LearningLibrary() {
   const [status, setStatus] = useState("");
   const [usage, setUsage] = useState("");
   const courses = r.data?.courses || [];
-  const rows = courses.filter(
-    (c: any) =>
-      `${c.document.title} ${c.document.description}`
-        .toLowerCase()
-        .includes(search.toLowerCase()) &&
-      (!category || c.document.category === category) &&
-      (!status || c.status === status) &&
-      (!usage || (usage === "used" ? c.assigned > 0 : !c.assigned)),
-  );
+  const rows = courses.filter((c: any) => `${c.document.title} ${c.document.description}`.toLowerCase().includes(search.toLowerCase()) && (!category || c.document.category === category) && (!status || c.status === status) && (!usage || (usage === "used" ? c.assigned > 0 : !c.assigned)));
   return (
     <>
-      <PageTitle
-        title={t("Learning library", "Pustaka pembelajaran")}
-        description={t(
-          "Practical security learning, managed from one place.",
-          "Pembelajaran keamanan praktis yang dikelola dari satu tempat.",
-        )}
-        actions={
-          user?.role !== "manager" ? (
-            <ActionLink to="/admin/learning/new">
-              {t("Create course", "Buat materi")}
-            </ActionLink>
-          ) : undefined
-        }
-      />
+      <PageTitle title={t("Learning library", "Pustaka pembelajaran")} description={t("Practical security learning, managed from one place.", "Pembelajaran keamanan praktis yang dikelola dari satu tempat.")} actions={user?.role !== "manager" ? <ActionLink to="/admin/studio?kind=content">{t("Create course", "Buat materi")}</ActionLink> : undefined} />
       <div className="toolbar">
-        <input
-          aria-label={t("Search learning", "Cari materi")}
-          placeholder={t("Search learning…", "Cari materi…")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <select
-          aria-label={t("Category", "Kategori")}
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          <option value="">{t("All topics", "Semua topik")}</option>
-          {[
-            ...new Set<string>(courses.map((c: any) => c.document.category)),
-          ].map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
-        <select
-          aria-label={t("Status", "Status")}
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="">{t("All statuses", "Semua status")}</option>
-          <option value="Published">{t("Published", "Terbit")}</option>
-          <option value="Draft">{t("Draft", "Draf")}</option>
-          <option value="Archived">{t("Archived", "Diarsipkan")}</option>
-        </select>
-        <select
-          value={usage}
-          onChange={(e) => setUsage(e.target.value)}
-          aria-label={t("Usage", "Penggunaan")}
-        >
-          <option value="">{t("All usage", "Semua penggunaan")}</option>
-          <option value="used">{t("Assigned", "Ditugaskan")}</option>
-          <option value="unused">
-            {t("Not assigned", "Belum ditugaskan")}
-          </option>
-        </select>
+        <input aria-label={t("Search learning", "Cari materi")} placeholder={t("Search learning…", "Cari materi…")} value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select aria-label={t("Category", "Kategori")} value={category} onChange={(e) => setCategory(e.target.value)}><option value="">{t("All topics", "Semua topik")}</option>{[...new Set<string>(courses.map((c: any) => c.document.category))].map((c) => <option key={c}>{c}</option>)}</select>
+        <select aria-label={t("Status", "Status")} value={status} onChange={(e) => setStatus(e.target.value)}><option value="">{t("All statuses", "Semua status")}</option><option value="Published">{t("Published", "Terbit")}</option><option value="Draft">{t("Draft", "Draf")}</option><option value="Archived">{t("Archived", "Diarsipkan")}</option></select>
+        <select value={usage} onChange={(e) => setUsage(e.target.value)} aria-label={t("Usage", "Penggunaan")}><option value="">{t("All usage", "Semua penggunaan")}</option><option value="used">{t("Assigned", "Ditugaskan")}</option><option value="unused">{t("Not assigned", "Belum ditugaskan")}</option></select>
       </div>
       <Loading resource={r}>
-        {rows.length ? (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>{t("Learning", "Pembelajaran")}</th>
-                  <th>{t("Status", "Status")}</th>
-                  <th>{t("Duration", "Durasi")}</th>
-                  <th>{t("Assigned", "Ditugaskan")}</th>
-                  <th>{t("Completion", "Penyelesaian")}</th>
-                  <th className="secondary-column">
-                    {t("Updated", "Diperbarui")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((c: any) => (
-                  <tr key={c.id}>
-                    <td>
-                      <Link to={`/admin/learning/${c.id}`}>
-                        {c.document.title}
-                      </Link>
-                      <small>
-                        {c.document.category} · {t("Version", "Versi")}{" "}
-                        {c.version}
-                      </small>
-                    </td>
-                    <td>
-                      <Status value={c.status} />
-                    </td>
-                    <td>
-                      {c.document.duration} {t("min", "menit")}
-                    </td>
-                    <td>{c.assigned}</td>
-                    <td>
-                      <Progress
-                        value={
-                          c.assigned
-                            ? Math.round((c.completed / c.assigned) * 100)
-                            : null
-                        }
-                      />
-                    </td>
-                    <td className="secondary-column">{date(c.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <Empty
-            title={t("No matching learning", "Tidak ada materi yang sesuai")}
-            description={t(
-              "Adjust your filters or create a course with lessons and a quiz.",
-              "Sesuaikan filter atau buat materi dengan pelajaran dan kuis.",
-            )}
-          />
-        )}
+        {rows.length ? <div className="learning-library-sections">{[[true, t("AVERIS library", "Pustaka AVERIS")], [false, t("Your drafts", "Draft Anda")]].map(([isDefault, label]) => { const sectionRows = rows.filter((course: any) => course.isDefault === isDefault); if (!sectionRows.length) return null; return <section className="learning-library-section" key={String(isDefault)}><div className="section-head"><div><span className="eyebrow">{isDefault ? "AVERIS" : t("ORGANIZATION", "ORGANISASI")}</span><h2>{label}</h2></div><small>{sectionRows.length} {t("modules", "modul")}</small></div><div className="learning-card-grid">{sectionRows.map((c: any) => <Link to={`/admin/learning/${c.id}`} className="learning-card" key={c.id}><div className="learning-card-icon"><BookOpen size={19} /></div><div className="learning-card-top"><span className="learning-origin">{isDefault ? t("AVERIS default", "Default AVERIS") : t("Created by your team", "Dibuat tim Anda")}</span><Status value={c.status} /></div><h3>{c.document.title}</h3><p>{c.document.description || t("No description yet.", "Belum ada deskripsi.")}</p><div className="learning-card-meta"><span>{c.document.category}</span><span>{c.document.duration} {t("min", "menit")}</span><span>{c.assigned || 0} {t("assigned", "ditugaskan")}</span></div><div className="learning-card-foot"><small>{t("Updated", "Diperbarui")} {date(c.created_at)}</small><ArrowRight size={15} /></div></Link>)}</div></section>; })}</div> : <Empty title={t("No matching learning", "Tidak ada materi yang sesuai")} description={t("Adjust your filters or create a course with lessons and a quiz.", "Sesuaikan filter atau buat materi dengan pelajaran dan kuis.")} />}
       </Loading>
     </>
   );
@@ -230,7 +107,18 @@ export function CourseBuilder() {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const saveRef = useRef<() => Promise<void>>(async () => {});
+  const [publishConfirm, setPublishConfirm] = useState(false);
+  const incomplete =
+    !document.title.trim() ||
+    !document.category.trim() ||
+    document.lessons.some((lesson) => !lesson.title.trim() || !lesson.content.trim()) ||
+    document.questions.some(
+      (question) =>
+        !question.prompt.trim() ||
+        !question.explanation.trim() ||
+        question.options.some((option) => !option.trim()),
+    );
+  const saveRef = useRef<() => Promise<boolean>>(async () => true);
   const canEdit = user?.role !== "manager";
   useEffect(() => {
     if (id && r.data?.course) {
@@ -249,6 +137,17 @@ export function CourseBuilder() {
     setSaved(false);
   };
   const save = async (status: "Draft" | "Published") => {
+    if (incomplete) {
+      setError(new Error("COURSE_INCOMPLETE"));
+      setTab(
+        document.lessons.some(
+          (lesson) => !lesson.title.trim() || !lesson.content.trim(),
+        )
+          ? "lessons"
+          : "basics",
+      );
+      return false;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -267,8 +166,10 @@ export function CourseBuilder() {
       setSaved(true);
       if (!id)
         navigate(`/admin/learning/${result.course.id}`, { replace: true });
+      return true;
     } catch (e) {
       setError(e);
+      return false;
     } finally {
       setBusy(false);
     }
@@ -332,8 +233,12 @@ export function CourseBuilder() {
                 >
                   {t("Save draft", "Simpan draf")}
                 </Button>
-                <Button disabled={busy} onClick={() => void save("Published")}>
-                  {t("Publish", "Terbitkan")}
+                <Button
+                  disabled={busy || incomplete}
+                  onClick={() => setPublishConfirm(true)}
+                >
+                  <Check size={15} />
+                  {t("Publish learning", "Terbitkan pembelajaran")}
                 </Button>
               </>
             )}
@@ -341,6 +246,14 @@ export function CourseBuilder() {
         }
       />
       <ErrorNotice error={error} />
+      {incomplete && (
+        <div className="notice warning" role="status">
+          {t(
+            "Complete the title, topic, lesson text, and quiz answers before saving or publishing.",
+            "Lengkapi judul, topik, isi pelajaran, dan jawaban kuis sebelum menyimpan atau menerbitkan.",
+          )}
+        </div>
+      )}
       {saved && (
         <div className="notice" role="status">
           {t("Version saved", "Versi tersimpan")} · {meta.version} ·{" "}
@@ -789,6 +702,32 @@ export function CourseBuilder() {
               <div className="lesson-prose">{l.content}</div>
             </article>
           ))}
+        </Dialog>
+      )}
+      {publishConfirm && (
+        <Dialog
+          title={t("Publish learning?", "Terbitkan pembelajaran?")}
+          onClose={() => !busy && setPublishConfirm(false)}
+        >
+          <p>
+            {t(
+              "This version will be available for campaign assignment. Review the title, lessons, and quiz before publishing.",
+              "Versi ini akan tersedia untuk ditugaskan ke kampanye. Periksa judul, pelajaran, dan kuis sebelum menerbitkan.",
+            )}
+          </p>
+          <div className="actions section">
+            <Button variant="secondary" disabled={busy} onClick={() => setPublishConfirm(false)}>
+              {t("Keep editing", "Lanjut mengedit")}
+            </Button>
+            <Button
+              disabled={busy}
+              onClick={async () => {
+                if (await save("Published")) setPublishConfirm(false);
+              }}
+            >
+              {t("Confirm publish", "Konfirmasi terbitkan")}
+            </Button>
+          </div>
         </Dialog>
       )}
     </>
