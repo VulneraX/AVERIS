@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, BookOpen, Check, Plus, Save, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Check,
+  Plus,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { useAuth } from "./auth";
 import {
   ActionLink,
@@ -26,6 +34,8 @@ import {
   useStatus,
 } from "./ui";
 import { ScoreLedger } from "./WorkspacePages";
+import { useIntelligence } from "./intelligence/shared";
+import { CoachingMoment } from "./intelligence/EmployeeSecurity";
 
 type Question = {
   prompt: string;
@@ -44,10 +54,20 @@ type CourseDocument = {
   passingScore: number;
   maxAttempts: number;
   retryMinutes: number;
-  lessons: Array<{ title: string; content: string; kind: "Article" | "Scenario" | "Checklist" | "Security tip" }>;
+  lessons: Array<{
+    title: string;
+    content: string;
+    kind: "Article" | "Scenario" | "Checklist" | "Security tip";
+  }>;
   questions: Question[];
 };
-const blankQuestion: Question = { prompt: "", type: "choice", options: ["", ""], correct: [0], explanation: "" };
+const blankQuestion: Question = {
+  prompt: "",
+  type: "choice",
+  options: ["", ""],
+  correct: [0],
+  explanation: "",
+};
 const blankCourse: CourseDocument = {
   title: "",
   category: "",
@@ -65,24 +85,174 @@ export function LearningLibrary() {
   const r = useData("/courses");
   const { t } = useLocale();
   const date = useDate();
+  const statusLabel = useStatus();
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
   const [usage, setUsage] = useState("");
   const courses = r.data?.courses || [];
-  const rows = courses.filter((c: any) => `${c.document.title} ${c.document.description}`.toLowerCase().includes(search.toLowerCase()) && (!category || c.document.category === category) && (!status || c.status === status) && (!usage || (usage === "used" ? c.assigned > 0 : !c.assigned)));
+  const rows = courses.filter(
+    (c: any) =>
+      `${c.document.title} ${c.document.description}`
+        .toLowerCase()
+        .includes(search.toLowerCase()) &&
+      (!category || c.document.category === category) &&
+      (!status || c.status === status) &&
+      (!usage || (usage === "used" ? c.assigned > 0 : !c.assigned)),
+  );
   return (
     <>
-      <PageTitle title={t("Learning library", "Pustaka pembelajaran")} description={t("Practical security learning, managed from one place.", "Pembelajaran keamanan praktis yang dikelola dari satu tempat.")} actions={user?.role !== "manager" ? <ActionLink to="/admin/studio?kind=content">{t("Create course", "Buat materi")}</ActionLink> : undefined} />
+      <PageTitle
+        title={t("Learning library", "Pustaka pembelajaran")}
+        description={t(
+          "Practical security learning, managed from one place.",
+          "Pembelajaran keamanan praktis yang dikelola dari satu tempat.",
+        )}
+        actions={
+          user?.role !== "manager" ? (
+            <>
+              <ActionLink secondary to="/admin/studio?kind=content">
+                {t("Content studio", "Studio konten")}
+              </ActionLink>
+              <ActionLink to="/admin/learning/new">
+                {t("Create course", "Buat materi")}
+              </ActionLink>
+            </>
+          ) : undefined
+        }
+      />
       <div className="toolbar">
-        <input aria-label={t("Search learning", "Cari materi")} placeholder={t("Search learning…", "Cari materi…")} value={search} onChange={(e) => setSearch(e.target.value)} />
-        <select aria-label={t("Category", "Kategori")} value={category} onChange={(e) => setCategory(e.target.value)}><option value="">{t("All topics", "Semua topik")}</option>{[...new Set<string>(courses.map((c: any) => c.document.category))].map((c) => <option key={c}>{c}</option>)}</select>
-        <select aria-label={t("Status", "Status")} value={status} onChange={(e) => setStatus(e.target.value)}><option value="">{t("All statuses", "Semua status")}</option><option value="Published">{t("Published", "Terbit")}</option><option value="Draft">{t("Draft", "Draf")}</option><option value="Archived">{t("Archived", "Diarsipkan")}</option></select>
-        <select value={usage} onChange={(e) => setUsage(e.target.value)} aria-label={t("Usage", "Penggunaan")}><option value="">{t("All usage", "Semua penggunaan")}</option><option value="used">{t("Assigned", "Ditugaskan")}</option><option value="unused">{t("Not assigned", "Belum ditugaskan")}</option></select>
+        <input
+          aria-label={t("Search learning", "Cari materi")}
+          placeholder={t("Search learning…", "Cari materi…")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          aria-label={t("Category", "Kategori")}
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          <option value="">{t("All topics", "Semua topik")}</option>
+          {[
+            ...new Set<string>(courses.map((c: any) => c.document.category)),
+          ].map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+        <select
+          aria-label={t("Status", "Status")}
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
+          <option value="">{t("All statuses", "Semua status")}</option>
+          <option value="Published">{t("Published", "Terbit")}</option>
+          <option value="Draft">{t("Draft", "Draf")}</option>
+          <option value="Archived">{t("Archived", "Diarsipkan")}</option>
+        </select>
+        <select
+          value={usage}
+          onChange={(e) => setUsage(e.target.value)}
+          aria-label={t("Usage", "Penggunaan")}
+        >
+          <option value="">{t("All usage", "Semua penggunaan")}</option>
+          <option value="used">{t("Assigned", "Ditugaskan")}</option>
+          <option value="unused">
+            {t("Not assigned", "Belum ditugaskan")}
+          </option>
+        </select>
       </div>
       <Loading resource={r}>
-        {rows.length ? <div className="learning-library-sections">{[[true, t("AVERIS library", "Pustaka AVERIS")], [false, t("Your drafts", "Draft Anda")]].map(([isDefault, label]) => { const sectionRows = rows.filter((course: any) => course.isDefault === isDefault); if (!sectionRows.length) return null; return <section className="learning-library-section" key={String(isDefault)}><div className="section-head"><div><span className="eyebrow">{isDefault ? "AVERIS" : t("ORGANIZATION", "ORGANISASI")}</span><h2>{label}</h2></div><small>{sectionRows.length} {t("modules", "modul")}</small></div><div className="learning-card-grid">{sectionRows.map((c: any) => <Link to={`/admin/learning/${c.id}`} className="learning-card" key={c.id}><div className="learning-card-icon"><BookOpen size={19} /></div><div className="learning-card-top"><span className="learning-origin">{isDefault ? t("AVERIS default", "Default AVERIS") : t("Created by your team", "Dibuat tim Anda")}</span><Status value={c.status} /></div><h3>{c.document.title}</h3><p>{c.document.description || t("No description yet.", "Belum ada deskripsi.")}</p><div className="learning-card-meta"><span>{c.document.category}</span><span>{c.document.duration} {t("min", "menit")}</span><span>{c.assigned || 0} {t("assigned", "ditugaskan")}</span></div><div className="learning-card-foot"><small>{t("Updated", "Diperbarui")} {date(c.created_at)}</small><ArrowRight size={15} /></div></Link>)}</div></section>; })}</div> : <Empty title={t("No matching learning", "Tidak ada materi yang sesuai")} description={t("Adjust your filters or create a course with lessons and a quiz.", "Sesuaikan filter atau buat materi dengan pelajaran dan kuis.")} />}
+        {rows.length ? (
+          <div className="learning-library-sections">
+            {[
+              [true, t("AVERIS library", "Pustaka AVERIS")],
+              [false, t("Organization learning", "Pembelajaran organisasi")],
+            ].map(([isDefault, label]) => {
+              const sectionRows = rows.filter(
+                (course: any) => course.isDefault === isDefault,
+              );
+              if (!sectionRows.length) return null;
+              return (
+                <section
+                  className="learning-library-section"
+                  key={String(isDefault)}
+                >
+                  <div className="section-head">
+                    <div>
+                      <span className="eyebrow">
+                        {isDefault ? "AVERIS" : t("ORGANIZATION", "ORGANISASI")}
+                      </span>
+                      <h2>{label}</h2>
+                    </div>
+                    <small>
+                      {sectionRows.length} {t("modules", "modul")}
+                    </small>
+                  </div>
+                  <div className="learning-card-grid">
+                    {sectionRows.map((c: any) => (
+                      <Link
+                        to={`/admin/learning/${c.id}`}
+                        className="learning-card"
+                        key={c.id}
+                      >
+                        <div className="learning-card-icon">
+                          <BookOpen size={19} />
+                        </div>
+                        <div className="learning-card-top">
+                          <span className="learning-origin">
+                            {isDefault
+                              ? t("AVERIS default", "Default AVERIS")
+                              : t("Created by your team", "Dibuat tim Anda")}
+                          </span>
+                          <Status value={c.status} />
+                        </div>
+                        <h3>{c.document.title}</h3>
+                        <p>
+                          {c.document.description ||
+                            t("No description yet.", "Belum ada deskripsi.")}
+                        </p>
+                        <div className="learning-card-meta">
+                          <span>{c.document.category}</span>
+                          <span>
+                            {c.document.duration} {t("min", "menit")}
+                          </span>
+                          <span>{statusLabel(c.document.difficulty)}</span>
+                          <span>
+                            {c.document.language === "id"
+                              ? "Bahasa Indonesia"
+                              : "English"}
+                          </span>
+                          <span>
+                            {t("Revision", "Revisi")} {c.version}
+                          </span>
+                          <span>
+                            {c.assigned || 0} {t("assigned", "ditugaskan")}
+                          </span>
+                        </div>
+                        <div className="learning-card-foot">
+                          <small>
+                            {t("Updated", "Diperbarui")} {date(c.created_at)}
+                          </small>
+                          <ArrowRight size={15} />
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        ) : (
+          <Empty
+            title={t("No matching learning", "Tidak ada materi yang sesuai")}
+            description={t(
+              "Adjust your filters or create a course with lessons and a quiz.",
+              "Sesuaikan filter atau buat materi dengan pelajaran dan kuis.",
+            )}
+          />
+        )}
       </Loading>
     </>
   );
@@ -111,7 +281,9 @@ export function CourseBuilder() {
   const incomplete =
     !document.title.trim() ||
     !document.category.trim() ||
-    document.lessons.some((lesson) => !lesson.title.trim() || !lesson.content.trim()) ||
+    document.lessons.some(
+      (lesson) => !lesson.title.trim() || !lesson.content.trim(),
+    ) ||
     document.questions.some(
       (question) =>
         !question.prompt.trim() ||
@@ -716,7 +888,11 @@ export function CourseBuilder() {
             )}
           </p>
           <div className="actions section">
-            <Button variant="secondary" disabled={busy} onClick={() => setPublishConfirm(false)}>
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => setPublishConfirm(false)}
+            >
               {t("Keep editing", "Lanjut mengedit")}
             </Button>
             <Button
@@ -768,6 +944,12 @@ function TaskRow({ a }: { a: any }) {
 }
 export function EmployeeHome() {
   const r = useData("/me");
+  const security = useIntelligence("/me");
+  const [coach, setCoach] = useState<any>(null);
+  const coaching = security.data?.coaching.find((c: any) => !c.completed_at);
+  const practice = security.data?.practice.find(
+    (p: any) => p.status !== "Completed" && new Date(p.expires_at) > new Date(),
+  );
   const { user } = useAuth();
   const { t } = useLocale();
   const date = useDate();
@@ -775,9 +957,14 @@ export function EmployeeHome() {
   const nextAssessment = d?.assessments.find(
     (a: any) => !a.completed_at && !a.locked,
   );
-  const next = d?.assignments.find(
-    (a: any) => a.status !== "Completed" && a.program_status === "Active",
-  );
+  const next = d?.assignments
+    .filter(
+      (a: any) => a.status !== "Completed" && a.program_status === "Active",
+    )
+    .sort(
+      (a: any, b: any) =>
+        new Date(a.due_at).getTime() - new Date(b.due_at).getTime(),
+    )[0];
   const completed =
     d?.assignments.filter((a: any) => a.status === "Completed").length || 0;
   return (
@@ -793,7 +980,48 @@ export function EmployeeHome() {
       <Loading resource={r}>
         {d && (
           <>
-            {nextAssessment || next ? (
+            <ErrorNotice error={security.error} retry={security.reload} />
+            {coaching ? (
+              <section className="learning-next">
+                <span className="eyebrow">
+                  {t("YOUR NEXT ACTION", "TINDAKAN BERIKUTNYA")}
+                </span>
+                <h2>{coaching.topic}</h2>
+                <p>{coaching.reason}</p>
+                <small>
+                  {t(
+                    "A short coaching moment with practical guidance.",
+                    "Sesi pembinaan singkat dengan panduan praktis.",
+                  )}
+                </small>
+                <Button onClick={() => setCoach(coaching)}>
+                  {t("Start coaching", "Mulai pembinaan")}
+                  <ArrowRight size={15} />
+                </Button>
+              </section>
+            ) : practice ? (
+              <section className="learning-next">
+                <span className="eyebrow">
+                  {t("YOUR NEXT ACTION", "TINDAKAN BERIKUTNYA")}
+                </span>
+                <h2>
+                  {practice.topic} ·{" "}
+                  {t("Practice challenge", "Tantangan latihan")}
+                </h2>
+                <p>
+                  {t(
+                    "Practice a workplace decision and learn what to notice next time.",
+                    "Latih keputusan di tempat kerja dan pelajari hal yang perlu diperhatikan.",
+                  )}
+                </p>
+                <p>
+                  {t("Due", "Tenggat")} {date(practice.expires_at)}
+                </p>
+                <ActionLink to={`/employee/challenges/${practice.id}`}>
+                  {t("Start challenge", "Mulai tantangan")}
+                </ActionLink>
+              </section>
+            ) : nextAssessment || next ? (
               <section className="learning-next">
                 <span className="eyebrow">
                   {t("YOUR NEXT ACTION", "TINDAKAN BERIKUTNYA")}
@@ -819,6 +1047,37 @@ export function EmployeeHome() {
                       )
                     : `${next.duration} ${t("minutes", "menit")} · ${t("Due", "Tenggat")} ${date(next.due_at)}`}
                 </p>
+                {!nextAssessment && next && (
+                  <div className="learning-next-progress">
+                    <Progress
+                      value={
+                        next.lessons
+                          ? Math.round(
+                              (Math.min(next.lesson_index, next.lessons) /
+                                next.lessons) *
+                                100,
+                            )
+                          : null
+                      }
+                      label={t("Lesson progress", "Progres pelajaran")}
+                    />
+                    <small>
+                      {Math.max(
+                        0,
+                        Math.ceil(
+                          next.duration *
+                            (1 -
+                              Math.min(next.lesson_index, next.lessons) /
+                                Math.max(1, next.lessons)),
+                        ),
+                      )}{" "}
+                      {t(
+                        "min of learning remaining · estimate",
+                        "menit belajar tersisa · perkiraan",
+                      )}
+                    </small>
+                  </div>
+                )}
                 <ActionLink
                   to={
                     nextAssessment
@@ -852,8 +1111,8 @@ export function EmployeeHome() {
                 )}
               />
               <Metric
-                label="Awareness Score"
-                value={d.score ?? "—"}
+                label={t("Awareness Score", "Skor Kesadaran")}
+                value={d.score ?? t("Unmeasured", "Belum terukur")}
                 note={
                   d.score === null
                     ? t(
@@ -935,6 +1194,13 @@ export function EmployeeHome() {
           </>
         )}
       </Loading>
+      {coach && (
+        <CoachingMoment
+          coaching={coach}
+          onClose={() => setCoach(null)}
+          onSaved={security.reload}
+        />
+      )}
     </>
   );
 }
@@ -1046,6 +1312,7 @@ export function MyLearning() {
 }
 export function MyAwareness() {
   const r = useData("/me");
+  const security = useIntelligence("/me");
   const { t } = useLocale();
   return (
     <>
@@ -1060,12 +1327,30 @@ export function MyAwareness() {
         {r.data && (
           <>
             <div className="learning-next">
-              <span className="eyebrow">Awareness Score</span>
+              <span className="eyebrow">
+                {t("Awareness Score", "Skor Kesadaran")}
+              </span>
               <div className="score-line">
-                <strong>{r.data.score ?? "—"}</strong>
-                <span>/ 100</span>
+                <strong>
+                  {r.data.score ?? t("Unmeasured", "Belum terukur")}
+                </strong>
+                {r.data.score !== null && <span>/ 100</span>}
                 <Status value={r.data.risk} />
               </div>
+              <div className="row">
+                <span>
+                  {t("Measured component coverage", "Cakupan komponen terukur")}
+                </span>
+                <strong>{r.data.coverage}%</strong>
+              </div>
+              {r.data.score !== null && r.data.coverage < 100 && (
+                <small>
+                  {t(
+                    "Partial evidence: some score components have not been measured yet.",
+                    "Bukti parsial: beberapa komponen skor belum diukur.",
+                  )}
+                </small>
+              )}
               <p>
                 {t(
                   "A learning guide, not a performance rating. Your next assessment or learning result adds new evidence.",
@@ -1076,6 +1361,50 @@ export function MyAwareness() {
                 {t("Continue learning", "Lanjutkan pembelajaran")}
               </ActionLink>
             </div>
+            <Loading resource={security}>
+              {security.data && (
+                <div className="split section">
+                  <section className="sheet">
+                    <h2>{t("Your next skill", "Keterampilan berikutnya")}</h2>
+                    <h3 className="section">{security.data.plan.topic}</h3>
+                    <p>{security.data.plan.reason}</p>
+                    <p className="section">{security.data.plan.outcome}</p>
+                    <Link className="text-link row" to="/employee">
+                      {t("See my next action", "Lihat tindakan berikutnya")}
+                      <ArrowRight size={15} />
+                    </Link>
+                  </section>
+                  <section className="sheet">
+                    <h2>{t("Achievements", "Pencapaian")}</h2>
+                    <div className="row">
+                      <span>{security.data.level}</span>
+                      <strong>
+                        {security.data.streak}{" "}
+                        {t("week activity streak", "minggu aktivitas beruntun")}
+                      </strong>
+                    </div>
+                    {security.data.badges.length ? (
+                      security.data.badges.map((b: any) => (
+                        <div className="row" key={b.name}>
+                          <Check size={18} />
+                          <div>
+                            <strong>{b.name}</strong>
+                            <small>{b.description}</small>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p>
+                        {t(
+                          "Learning, practice and verified reports build your achievement record.",
+                          "Pembelajaran, latihan, dan laporan terverifikasi membentuk catatan pencapaian Anda.",
+                        )}
+                      </p>
+                    )}
+                  </section>
+                </div>
+              )}
+            </Loading>
             <ScoreLedger
               components={r.data.components}
               events={r.data.events}
@@ -1094,22 +1423,27 @@ export function LearningPlayer() {
   const status = useStatus();
   const navigate = useNavigate();
   const [index, setIndex] = useState(0);
+  const [completedLessons, setCompletedLessons] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   useEffect(() => {
-    if (r.data)
+    if (r.data) {
+      setCompletedLessons(r.data.assignment.lesson_index);
       setIndex(
         Math.min(
           r.data.assignment.lesson_index,
           r.data.document.lessons.length - 1,
         ),
       );
+    }
   }, [r.data]);
   const d = r.data;
   const next = async () => {
     setBusy(true);
+    setError(null);
     try {
       await mutate(`/learning/${id}/progress`, { lessonIndex: index + 1 });
+      setCompletedLessons((previous) => Math.max(previous, index + 1));
       if (index === d.document.lessons.length - 1)
         navigate(`/employee/learning/${id}/quiz`);
       else setIndex(index + 1);
@@ -1143,14 +1477,39 @@ export function LearningPlayer() {
                   <button
                     key={i}
                     className={i === index ? "active" : ""}
-                    disabled={i > Math.max(d.assignment.lesson_index, index)}
+                    disabled={i > completedLessons}
+                    aria-current={i === index ? "step" : undefined}
                     onClick={() => setIndex(i)}
                   >
-                    {i + 1}. {l.title}
+                    <span>
+                      {i < completedLessons ? <Check size={14} /> : `${i + 1}.`}
+                    </span>{" "}
+                    {l.title}
                   </button>
                 ))}
               </nav>
-              <article className="lesson-article" lang={d.document.language}>
+              <label className="lesson-mobile-navigation">
+                {t("Lesson navigation", "Navigasi pelajaran")}
+                <select
+                  value={index}
+                  onChange={(event) => setIndex(Number(event.target.value))}
+                >
+                  {d.document.lessons.map((lesson: any, position: number) => (
+                    <option
+                      key={position}
+                      value={position}
+                      disabled={position > completedLessons}
+                    >
+                      {position + 1}. {lesson.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <article
+                key={index}
+                className="lesson-article"
+                lang={d.document.language}
+              >
                 <span className="eyebrow">
                   {t("LESSON", "PELAJARAN")} {index + 1} /{" "}
                   {d.document.lessons.length} ·{" "}
@@ -1158,9 +1517,16 @@ export function LearningPlayer() {
                 </span>
                 <Progress
                   value={Math.round(
-                    ((index + 1) / d.document.lessons.length) * 100,
+                    (completedLessons / d.document.lessons.length) * 100,
                   )}
                 />
+                <small role="status">
+                  {completedLessons} / {d.document.lessons.length}{" "}
+                  {t(
+                    "lessons completed · progress saves when you continue",
+                    "pelajaran selesai · progres tersimpan saat melanjutkan",
+                  )}
+                </small>
                 <h1>{d.document.lessons[index].title}</h1>
                 {d.document.lessons[index].kind === "Checklist" ? (
                   <ul className="lesson-prose">

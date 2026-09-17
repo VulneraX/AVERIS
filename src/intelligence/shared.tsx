@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { apiRequest } from "../api";
+import { useAuth } from "../auth";
 import { Button, ErrorNotice, Field, useData, useLocale } from "../ui";
 
 export const intelligencePath = (path: string) =>
@@ -99,15 +100,22 @@ export function RiskStatus({ score }: { score: number | null }) {
   );
 }
 export function IntelNav({ active }: { active: string }) {
+  const { user } = useAuth();
+  const canManageSecurity = ["super_admin", "admin"].includes(user?.role || "");
+  const views = [
+    ["Map", "/admin/human-risk"],
+    ...(canManageSecurity
+      ? [
+          ["Cohorts", "/admin/human-risk/cohorts"],
+          ["Threat feed", "/admin/human-risk/threats"],
+          ["Autopilot", "/admin/human-risk/autopilot"],
+          ["Evidence & audit", "/admin/human-risk/audit"],
+        ]
+      : []),
+  ];
   return (
     <nav className="intel-subnav" aria-label="Human risk views">
-      {[
-        ["Map", "/admin/human-risk"],
-        ["Cohorts", "/admin/human-risk/cohorts"],
-        ["Threat feed", "/admin/human-risk/threats"],
-        ["Autopilot", "/admin/human-risk/autopilot"],
-        ["Evidence & audit", "/admin/human-risk/audit"],
-      ].map(([label, url]) => (
+      {views.map(([label, url]) => (
         <Link
           key={label}
           to={url}

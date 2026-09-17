@@ -141,7 +141,7 @@ test("campaign → individual learning → assessment → certificate → phishi
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await login(page);
   await page.getByRole("link", { name: "Security inbox", exact: true }).click();
-  await page.getByRole("button", { name: "View", exact: true }).first().click();
+  await page.getByRole("button", { name: /Urgent account change/ }).click();
   await page
     .getByLabel("Investigation status")
     .selectOption("Confirmed Suspicious");
@@ -150,7 +150,9 @@ test("campaign → individual learning → assessment → certificate → phishi
     .fill("Confirmed suspicious after reviewing the sender.");
   await page.getByRole("button", { name: "Save review" }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
-  await expect(page.locator("table")).toContainText("Confirmed Suspicious");
+  await expect(page.locator(".security-message-list")).toContainText(
+    "Confirmed Suspicious",
+  );
   await page.goto("/admin");
   await page.screenshot({
     path: testInfo.outputPath("overview-with-evidence.png"),
@@ -226,4 +228,74 @@ test("navigation, localization, mobile learning and WCAG basics", async ({
   await expect(
     page.getByRole("heading", { name: "Certificates", exact: true }),
   ).toBeVisible();
+});
+test("manager navigation only exposes permitted work", async ({ page }) => {
+  await login(page, "manager@acme.co.id");
+  const navigation = page.getByRole("navigation", {
+    name: "Primary navigation",
+  });
+  await expect(
+    navigation.getByRole("link", { name: "Overview" }),
+  ).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "People" })).toBeVisible();
+  await expect(
+    navigation.getByRole("link", { name: "Simulations" }),
+  ).toHaveCount(0);
+  await expect(
+    navigation.getByRole("link", { name: "Integrations" }),
+  ).toHaveCount(0);
+  await page.goto("/admin/campaigns");
+  await expect(
+    page.getByRole("link", { name: "Continuous programs" }),
+  ).toHaveCount(0);
+  await page.goto("/admin/human-risk");
+  const humanRiskNavigation = page.getByRole("navigation", {
+    name: "Human risk views",
+  });
+  await expect(
+    humanRiskNavigation.getByRole("link", { name: "Map" }),
+  ).toBeVisible();
+  await expect(
+    humanRiskNavigation.getByRole("link", { name: "Autopilot" }),
+  ).toHaveCount(0);
+});
+
+test("workspace preserves navigation during loading and recovers from a failed request", async ({
+  page,
+}) => {
+  await login(page);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/workspace/people", async (route) => {
+    await gate;
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error: {
+          code: "SERVICE_UNAVAILABLE",
+          message: "The directory is temporarily unavailable.",
+        },
+      }),
+    });
+  });
+  await page.goto("/admin/employees");
+  await expect(page.locator(".skeleton-page")).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Primary navigation" }),
+  ).toBeVisible();
+  release();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await page.unroute("**/api/workspace/people");
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.locator(".skeleton-page")).toHaveCount(0);
+  for (const width of [1440, 1024, 768, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBe(width);
+  }
 });

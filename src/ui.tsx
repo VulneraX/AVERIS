@@ -1,5 +1,6 @@
 import { GlobalCreate } from "./intelligence/shared";
 import {
+  Suspense,
   createContext,
   cloneElement,
   isValidElement,
@@ -36,6 +37,7 @@ import {
 } from "lucide-react";
 import { apiRequest, ApiError, downloadFromApi } from "./api";
 import { useAuth } from "./auth";
+import "./workspace-experience.css";
 
 type Locale = "en" | "id";
 const LocaleContext = createContext<{
@@ -80,7 +82,10 @@ export function LanguageSwitch() {
   );
 }
 export function ThemeSwitch() {
-  const [dark, setDark] = useState(() => localStorage.getItem("averis-theme") === "dark");
+  const { t } = useLocale();
+  const [dark, setDark] = useState(
+    () => localStorage.getItem("averis-theme") === "dark",
+  );
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
     localStorage.setItem("averis-theme", dark ? "dark" : "light");
@@ -90,8 +95,14 @@ export function ThemeSwitch() {
       className="icon-button"
       type="button"
       onClick={() => setDark((value) => !value)}
-      aria-label={dark ? "Use light theme" : "Use dark theme"}
-      title={dark ? "Light theme" : "Dark theme"}
+      aria-label={
+        dark
+          ? t("Use light theme", "Gunakan tema terang")
+          : t("Use dark theme", "Gunakan tema gelap")
+      }
+      title={
+        dark ? t("Light theme", "Tema terang") : t("Dark theme", "Tema gelap")
+      }
     >
       {dark ? <Sun size={17} /> : <Moon size={17} />}
     </button>
@@ -382,10 +393,20 @@ export function Progress({
   value: number | null;
   label?: string;
 }) {
+  const { t } = useLocale();
+  const measured = value !== null && value !== undefined;
   return (
     <div className="progress-line">
-      <progress value={value || 0} max={100} aria-label={label || "Progress"} />
-      <span>{value === null ? "—" : `${value}%`}</span>
+      {measured ? (
+        <progress
+          value={Math.max(0, Math.min(100, value))}
+          max={100}
+          aria-label={label || t("Progress", "Progres")}
+        />
+      ) : (
+        <span className="progress-unmeasured" aria-hidden="true" />
+      )}
+      <span>{measured ? `${value}%` : t("Unmeasured", "Belum terukur")}</span>
     </div>
   );
 }
@@ -746,6 +767,42 @@ export function Shell() {
   const { user, logout } = useAuth();
   const { t, setLocale } = useLocale();
   const [open, setOpen] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const menuRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusable = () => [
+      ...(sidebarRef.current?.querySelectorAll<HTMLElement>(
+        "a[href], button:not(:disabled)",
+      ) || []),
+    ];
+    focusable()[0]?.focus();
+    const keyboard = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+      }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      const first = items[0];
+      const last = items.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener("keydown", keyboard);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", keyboard);
+      menuRef.current?.focus();
+    };
+  }, [open]);
   const location = useLocation();
   useEffect(() => setOpen(false), [location.pathname]);
   useEffect(() => {
@@ -754,13 +811,14 @@ export function Shell() {
   }, [user?.organization.locale]);
   if (!user) return null;
   const employee = user.role === "employee";
+  const canManageSecurity = ["super_admin", "admin"].includes(user.role);
   const navigation = employee
     ? [
         ["/employee", t("Home", "Beranda"), LayoutDashboard],
         ["/employee/learning", t("Learning", "Pembelajaran"), BookOpen],
         [
           "/employee/awareness",
-          t("My Security Profile", "Profil Keamanan Saya"),
+          t("My Awareness", "Awareness Saya"),
           ChartNoAxesCombined,
         ],
         ["/employee/certificates", t("Certificates", "Sertifikat"), Award],
@@ -770,12 +828,7 @@ export function Shell() {
         ["/admin/employees", t("People", "Karyawan"), Users],
         ["/admin/campaigns", t("Campaigns", "Kampanye"), Target],
         ["/admin/learning", t("Learning", "Pembelajaran"), BookOpen],
-        ["/admin/simulations", t("Simulations", "Simulasi"), ShieldCheck],
-        [
-          "/admin/human-risk",
-          t("Human Risk", "Risiko Manusia"),
-          ChartNoAxesCombined,
-        ],
+        ["/admin/awareness", t("Awareness", "Awareness"), ChartNoAxesCombined],
         ["/admin/reports", t("Reports", "Laporan"), FileText],
       ];
   const current =
@@ -796,7 +849,15 @@ export function Shell() {
           aria-label={t("Close navigation", "Tutup navigasi")}
         />
       )}
-      <aside className={`sidebar ${open ? "open" : ""}`}>
+      <aside
+        ref={sidebarRef}
+        role={open ? "dialog" : undefined}
+        aria-modal={open || undefined}
+        aria-label={
+          open ? t("Workspace navigation", "Navigasi ruang kerja") : undefined
+        }
+        className={`sidebar ${open ? "open" : ""}`}
+      >
         <Brand />
         <div className="tenant">
           <span>{user.organization.name.slice(0, 2).toUpperCase()}</span>
@@ -825,7 +886,7 @@ export function Shell() {
           })}
         </nav>
         <div className="sidebar-secondary">
-          {!employee && (
+          {!employee && canManageSecurity && (
             <NavLink to="/admin/integrations">
               <ShieldCheck size={17} />
               {t("Integrations", "Integrasi")}
@@ -859,11 +920,13 @@ export function Shell() {
           </button>
         </div>
       </aside>
-      <div className="workspace-body">
+      <div className="workspace-body" inert={open}>
         <header className="topbar">
           <button
+            ref={menuRef}
             className="icon-button mobile-menu"
             onClick={() => setOpen(!open)}
+            aria-expanded={open}
             aria-label={t("Open navigation", "Buka navigasi")}
           >
             <Menu size={20} />
@@ -878,6 +941,15 @@ export function Shell() {
             <Notifications />
             <LanguageSwitch />
             <ThemeSwitch />
+            {employee && (
+              <Link
+                className="icon-button"
+                aria-label={t("My account", "Akun saya")}
+                to="/employee/account"
+              >
+                <Users size={17} />
+              </Link>
+            )}
             {employee ? (
               <Link className="report-action" to="/employee/report-phishing">
                 <Flag size={15} />
@@ -892,11 +964,17 @@ export function Shell() {
           </div>
         </header>
         <main id="main-content" className="content" tabIndex={-1}>
-          <Outlet />
+          <Suspense fallback={<Skeleton />}>
+            <Outlet />
+          </Suspense>
         </main>
         <footer className="workspace-footer">
           <span>
-            AVERIS · Measure Awareness. Understand Risk. Change Behavior.
+            AVERIS ·{" "}
+            {t(
+              "Measure → Understand → Act → Prove improvement",
+              "Ukur → Pahami → Bertindak → Buktikan peningkatan",
+            )}
           </span>
           <Link to="/verify">
             {t("Verify certificate", "Verifikasi sertifikat")}

@@ -1530,7 +1530,15 @@ export function registerWorkspace(app, deps) {
   // Remaining routes are registered below in the same tenant-owned service.
   registerOperations();
   registerIdentityAndSettings();
-  const intelligence = registerIntelligence(app, { ...deps, scoreFor, scoreEvent, people, notify, queue, activate });
+  const intelligence = registerIntelligence(app, {
+    ...deps,
+    scoreFor,
+    scoreEvent,
+    people,
+    notify,
+    queue,
+    activate,
+  });
   route("get", "/groups", viewers, (req, res) =>
     res.json({
       groups: q(
@@ -2230,7 +2238,7 @@ export function registerWorkspace(app, deps) {
           Number(req.auth.role === "employee"),
           req.auth.id,
         ).map((r) =>
-          req.auth.role === "employee"
+          !admin.includes(req.auth.role)
             ? { ...r, notes: undefined, fingerprint: undefined }
             : r,
         ),

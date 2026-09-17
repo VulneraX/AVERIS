@@ -7,7 +7,7 @@ AVERIS is a Security Awareness & Human Risk platform by **VulneraX** that helps 
 
 Panduan lengkap berbahasa Indonesia: [DOKUMENTASI_LENGKAP.md](DOKUMENTASI_LENGKAP.md). Implementasi, hasil pengujian, dan batas kesiapan produksi: [PRODUCT_MATURITY.md](PRODUCT_MATURITY.md).
 
-Public website, inquiry handling, and deployment notes: [Marketing website](docs/MARKETING.md).
+Public website, inquiry handling, and deployment notes: [Marketing website](docs/MARKETING.md). Route inventory and public product ecosystem boundaries: [Public website](docs/PUBLIC_WEBSITE.md).
 
 ## Overview
 
@@ -183,3 +183,13 @@ successful, failed, or denied security-relevant activity is written to `audit_lo
 ## AVERIS 2.0
 
 Human Risk Intelligence, Content Studio, adaptive practice, coaching, cohorts, controlled Autopilot, and signed signal ingestion are implemented. AI remains unconfigured by default. See [AVERIS 2.0 implementation and operations](docs/AVERIS-2.md) for the exact capabilities, risk formula, setup, and remaining external integration requirements.
+
+## Public product website
+
+The public presence is now a multi-route product website rather than a single
+landing page. Core routes include `/platform`, `/how-it-works`, `/product/*`,
+`/solutions`, `/tour`, `/demo`, `/request-demo`, `/videos`, `/tutorials`,
+`/academy`, `/docs`, `/resources`, `/security`, `/integrations`, `/support`,
+and `/tools/awareness-maturity`. These pages use fictional demo data and do not
+access authenticated tenant data. See [Public website](docs/PUBLIC_WEBSITE.md)
+for the complete route inventory, content boundaries, and current limitations.

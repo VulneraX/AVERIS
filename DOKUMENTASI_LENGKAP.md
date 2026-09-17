@@ -3,40 +3,41 @@
 Security Awareness & Human Risk Platform · oleh VulneraX  
 **Measure Awareness. Reduce Human Risk.**
 
-Dokumentasi implementasi workspace per 9 September 2026. Versi paket `0.1.0`, metodologi skor workspace `1.0`. Nomor versi bukan sertifikasi kesiapan produksi. Dokumen ini mendeskripsikan kode aktif; [dokumen historis](docs/DOKUMENTASI_LEGACY.md) disimpan untuk peninjauan migrasi. Status penerimaan dan pekerjaan tersisa tersedia di [PRODUCT_MATURITY.md](PRODUCT_MATURITY.md).
+Dokumentasi implementasi workspace dan public website per 13 September 2026. Versi paket `0.1.0`, metodologi skor workspace `1.0`. Nomor versi bukan sertifikasi kesiapan produksi. Dokumen ini mendeskripsikan kode aktif; [dokumen historis](docs/DOKUMENTASI_LEGACY.md) disimpan untuk peninjauan migrasi. Status penerimaan dan pekerjaan tersisa tersedia di [PRODUCT_MATURITY.md](PRODUCT_MATURITY.md).
 
 ## Daftar isi
 
 1. [Apa itu AVERIS](#1-apa-itu-averis)
-2. [Tujuan dan batas penggunaan](#2-tujuan-dan-batas-penggunaan)
-3. [Pengguna dan hak akses](#3-pengguna-dan-hak-akses)
-4. [Navigasi produk](#4-navigasi-produk)
-5. [Fitur administrator](#5-fitur-administrator)
-6. [Fitur karyawan](#6-fitur-karyawan)
-7. [Alur end-to-end](#7-alur-end-to-end)
-8. [Lifecycle kampanye](#8-lifecycle-kampanye)
-9. [Materi, kuis, dan asesmen](#9-materi-kuis-dan-asesmen)
-10. [Awareness Score](#10-awareness-score)
-11. [Metrik dan laporan](#11-metrik-dan-laporan)
-12. [Phishing](#12-phishing)
-13. [Sertifikat](#13-sertifikat)
-14. [Arsitektur](#14-arsitektur)
-15. [Technology stack](#15-technology-stack)
-16. [Struktur repository](#16-struktur-repository)
-17. [Model data dan migrasi](#17-model-data-dan-migrasi)
-18. [Kontrak API](#18-kontrak-api)
-19. [Identitas dan akses](#19-identitas-dan-akses)
-20. [Keamanan dan privasi](#20-keamanan-dan-privasi)
-21. [Notifikasi dan automation](#21-notifikasi-dan-automation)
-22. [Integrasi](#22-integrasi)
-23. [Design system dan aksesibilitas](#23-design-system-dan-aksesibilitas)
-24. [Instalasi dan konfigurasi](#24-instalasi-dan-konfigurasi)
-25. [Deployment dan operasional](#25-deployment-dan-operasional)
-26. [Testing](#26-testing)
-27. [Troubleshooting](#27-troubleshooting)
-28. [Batasan dan backlog](#28-batasan-dan-backlog)
-29. [Contoh penggunaan](#29-contoh-penggunaan)
-30. [Glosarium dan referensi](#30-glosarium-dan-referensi)
+2. [Public website ecosystem](#2-public-website-ecosystem)
+3. [Tujuan dan batas penggunaan](#3-tujuan-dan-batas-penggunaan)
+4. [Pengguna dan hak akses](#4-pengguna-dan-hak-akses)
+5. [Navigasi produk](#5-navigasi-produk)
+6. [Fitur administrator](#6-fitur-administrator)
+7. [Fitur karyawan](#7-fitur-karyawan)
+8. [Alur end-to-end](#8-alur-end-to-end)
+9. [Lifecycle kampanye](#9-lifecycle-kampanye)
+10. [Materi, kuis, dan asesmen](#10-materi-kuis-dan-asesmen)
+11. [Awareness Score](#11-awareness-score)
+12. [Metrik dan laporan](#12-metrik-dan-laporan)
+13. [Phishing](#13-phishing)
+14. [Sertifikat](#14-sertifikat)
+15. [Arsitektur](#15-arsitektur)
+16. [Technology stack](#16-technology-stack)
+17. [Struktur repository](#17-struktur-repository)
+18. [Model data dan migrasi](#18-model-data-dan-migrasi)
+19. [Kontrak API](#19-kontrak-api)
+20. [Identitas dan akses](#20-identitas-dan-akses)
+21. [Keamanan dan privasi](#21-keamanan-dan-privasi)
+22. [Notifikasi dan automation](#22-notifikasi-dan-automation)
+23. [Integrasi](#23-integrasi)
+24. [Design system dan aksesibilitas](#24-design-system-dan-aksesibilitas)
+25. [Instalasi dan konfigurasi](#25-instalasi-dan-konfigurasi)
+26. [Deployment dan operasional](#26-deployment-dan-operasional)
+27. [Testing](#27-testing)
+28. [Troubleshooting](#28-troubleshooting)
+29. [Batasan dan backlog](#29-batasan-dan-backlog)
+30. [Contoh penggunaan](#30-contoh-penggunaan)
+31. [Glosarium dan referensi](#31-glosarium-dan-referensi)
 
 ## 1. Apa itu AVERIS
 
@@ -59,7 +60,35 @@ Ukur → Pahami risiko → Ambil tindakan → Buktikan perubahan
 
 Contoh sederhana: hasil topik phishing rendah pada kelompok Finance. Admin menugaskan refresher, peserta menjalankan baseline dan pembelajaran, lalu follow-up. Tim meninjau hasil dan mengekspor bukti program.
 
-## 2. Tujuan dan batas penggunaan
+## 2. Public website ecosystem
+
+Website publik AVERIS sekarang memiliki route terpisah untuk discovery,
+evaluasi, product education, dan konversi. Homepage `/` tetap menjadi cerita
+singkat; halaman lain tidak masuk ke workspace terautentikasi.
+
+Route inti:
+
+- `/platform`, `/how-it-works`, dan `/product/*` menjelaskan kemampuan produk aktif.
+- `/solutions` menjelaskan kebutuhan Security, GRC, dan HR / Learning.
+- `/tour` menyediakan guided tour lima langkah dengan data demo fiktif.
+- `/demo` menyediakan self-service product preview tanpa membuat akun.
+- `/request-demo` mengirim inquiry melalui endpoint public yang sudah ada.
+- `/videos`, `/tutorials`, `/academy`, `/docs`, `/resources`, `/blog`, dan `/guides` menyediakan content hub lokal.
+- `/security`, `/integrations`, `/support`, `/pricing`, `/about`, dan `/compare` menjelaskan trust, status konektor, bantuan, serta positioning komersial.
+- `/tools/awareness-maturity` menyediakan penilaian indikatif lima pertanyaan tanpa meminta email.
+
+Halaman public menggunakan `PublicSite.tsx` dan `public-site.css`. Product frame
+memakai data ACME fiktif yang diberi label ilustratif; tidak ada tenant,
+employee, inquiry, campaign, atau simulation workspace yang berubah ketika
+visitor berinteraksi dengan tour atau demo.
+
+Content saat ini masih berupa typed local data, bukan CMS. Video player nyata,
+transcript/chapter, global Cmd/Ctrl+K search, localized route metadata, CRM,
+webinar lifecycle, customer stories, dan public uptime history belum aktif.
+Jangan mendokumentasikan item tersebut sebagai capability yang sudah tersedia.
+Route inventory dan batas detail ada di [PUBLIC_WEBSITE.md](docs/PUBLIC_WEBSITE.md).
+
+## 3. Tujuan dan batas penggunaan
 
 ### Masalah yang ditangani
 
@@ -82,7 +111,7 @@ AVERIS bukan SIEM, EDR, email gateway, pemindai kerentanan, atau platform respon
 
 Awareness Score adalah indikator berdasarkan bukti tersedia, bukan probabilitas seseorang menyebabkan insiden. Sertifikat membuktikan kriteria belajar di aplikasi terpenuhi, bukan sertifikasi profesi atau jaminan kepatuhan hukum. Penggunaan data individual perlu mengikuti kebijakan internal dan prinsip minimisasi akses.
 
-## 3. Pengguna dan hak akses
+## 4. Pengguna dan hak akses
 
 Role ditegakkan backend melalui sesi dan pemeriksaan izin.
 
@@ -108,7 +137,7 @@ Super Admin adalah pemilik tenant, bukan operator global lintas semua organisasi
 
 Pengguna tidak dapat menonaktifkan akun sendiri atau mengubah role sendiri melalui manajemen pengguna. Penonaktifan dan perubahan role mencabut sesi target. Bukti pembelajaran tetap disimpan.
 
-## 4. Navigasi produk
+## 5. Navigasi produk
 
 ### Pengelola
 
@@ -129,7 +158,7 @@ Empat menu: Home, Learning, My Awareness, Certificates. My account berada di nav
 
 Kondisi kosong tidak diganti angka demo. Skeleton menunjukkan pemuatan; kesalahan memberikan penjelasan dan opsi mencoba kembali. Tindakan berdampak menggunakan konfirmasi. Pilihan bahasa ID / EN disimpan sebagai preferensi lokal.
 
-## 5. Fitur administrator
+## 6. Fitur administrator
 
 ### 5.1 Overview
 
@@ -165,7 +194,7 @@ Menampilkan skor, cakupan, distribusi risiko, hasil topik, perbandingan departem
 
 Kategori laporan: Executive, Campaign, Employee, Compliance Evidence. Settings menyimpan organisasi, bahasa default, zona waktu, pengingat, dan retensi pesan operasional. Account, sesi, MFA, audit, serta kesehatan pengiriman tersedia sebagai bagian sekunder.
 
-## 6. Fitur karyawan
+## 7. Fitur karyawan
 
 Home memprioritaskan tugas berikutnya berdasarkan data pribadi: asesmen awal, pembelajaran, lalu asesmen tindak lanjut yang telah terbuka. Halaman menampilkan progres, tenggat, awareness, dan pencapaian terbaru.
 
@@ -177,7 +206,7 @@ Attempt dan urutan soal tersimpan, tetapi pilihan jawaban sebelum submit hanya b
 
 My Awareness hanya menampilkan data sendiri, komponen terukur, metodologi, dan histori. Certificates memberikan download setelah kelulusan sah. Form phishing menerima pengirim, kanal, subjek, dan alasan; catatan investigasi internal tidak diberikan kepada employee.
 
-## 7. Alur end-to-end
+## 8. Alur end-to-end
 
 ### 7.1 Onboarding organisasi
 
@@ -219,7 +248,7 @@ Employee mengirim → validasi / deduplikasi → notifikasi admin → tinjauan d
 
 Permintaan reset → respons generik → job email untuk akun aktif yang cocok → token sekali pakai → password baru → pencabutan token dan sesi lama → login kembali. Akun dengan MFA tetap memerlukan verifikasi MFA dalam reset.
 
-## 8. Lifecycle kampanye
+## 9. Lifecycle kampanye
 
 | Status | Makna | Transisi |
 | --- | --- | --- |
@@ -246,7 +275,7 @@ Launch memerlukan audiens, konten, dan deadline mendatang. Draft dapat belum len
 
 Aktivasi membuat satu assignment per kombinasi program–user–revision. Unique constraint mencegah duplikasi. Peserta nonaktif tidak menerima tugas baru. Jadwal tanpa audiens aktif dikembalikan ke Draft dengan notifikasi pemilik, sehingga tidak menghentikan seluruh siklus worker.
 
-## 9. Materi, kuis, dan asesmen
+## 10. Materi, kuis, dan asesmen
 
 ### 9.1 Dokumen materi
 
@@ -291,7 +320,7 @@ Baseline mengukur pengetahuan awal. Follow-up mengukur setelah seluruh assignmen
 
 Asesmen bukan kuis penerbit sertifikat. Perubahan baseline–follow-up menjadi sinyal improvement bila kedua nilai ada. Asesmen hanya dapat dikerjakan pada program aktif. Penyelesaian asesmen yang sama tidak dapat dikirim ulang.
 
-## 10. Awareness Score
+## 11. Awareness Score
 
 ### 10.1 Prinsip
 
@@ -343,7 +372,7 @@ Ringkasan membandingkan skor sekarang dengan bukti sebelum awal periode, pada po
 
 Metodologi workspace ini dipisahkan dari kalkulasi agregat legacy. Angka lama tidak dikonversi menjadi event individual. Bobot ditampilkan sebagai metodologi tetap, bukan pengaturan yang dapat diubah bebas tanpa versioning.
 
-## 11. Metrik dan laporan
+## 12. Metrik dan laporan
 
 ### 11.1 Definisi denominator
 
@@ -385,7 +414,7 @@ Implementasi saat ini belum mempunyai desain ekspor yang sepenuhnya berbeda untu
 
 Ekspor adalah snapshot saat request. Keberadaan ID sertifikat pada CSV tidak menggantikan pengecekan status validitas terkini. Jangan menganggap laporan sebagai arsip bertanda tangan digital atau bukti yang tidak dapat diubah administrator database.
 
-## 12. Phishing
+## 13. Phishing
 
 ### 12.1 Pelaporan oleh karyawan
 
@@ -409,7 +438,7 @@ Target dihitung terkirim hanya sesudah SMTP menerima pengiriman. Pending bukan d
 
 Template saat ini memengaruhi pemilihan / judul email. Konten email dan landing masih berupa latihan generik yang aman; belum ada library visual berbeda beserta preview lengkap setiap template. Event opened mencerminkan akses landing, bukan tracking pixel inbox. Token yang bocor masih dapat digunakan pihak yang memegangnya selama aktif; lindungi payload dan tautan.
 
-## 13. Sertifikat
+## 14. Sertifikat
 
 Sertifikat diterbitkan setelah kuis assignment lulus. Satu assignment memiliki satu record sertifikat. ID acak menggunakan awalan `AVR-`; record memuat organisasi, user, assignment, judul, nilai, status, issued_at, dan data pencabutan.
 
@@ -421,7 +450,7 @@ Endpoint publik mengembalikan hanya ID, judul, tanggal terbit, status. Nama leng
 
 Sertifikat tidak ditandatangani dengan PKI dan PDF lama yang sudah diunduh tidak dapat ditarik dari perangkat pengguna. Status di URL verifikasi adalah acuan validitas terkini.
 
-## 14. Arsitektur
+## 15. Arsitektur
 
 ```text
 Browser
@@ -447,7 +476,7 @@ Database aktif adalah SQLite. Worker dipanggil dalam proses API, memakai antrean
 
 API lama dimatikan default dengan HTTP 410. Kode legacy tetap ada untuk peninjauan migrasi dan compatibility test, tetapi tidak dipakai oleh route utama workspace baru. Tidak ada migrasi otomatis yang menganggap angka demo sebagai bukti individual.
 
-## 15. Technology stack
+## 16. Technology stack
 
 Versi berikut dibaca dari `package-lock.json` pada pembaruan dokumen, bukan klaim versi terbaru di internet.
 
@@ -479,7 +508,7 @@ Dependency legacy seperti Recharts masih berada dalam package; keberadaan depend
 
 `better-sqlite3` memerlukan Node >=22 dan Vite memerlukan Node ^20.19 atau >=22.12. Untuk kombinasi aplikasi ini, gunakan Node >=22.12 dalam jalur runtime yang sudah diuji, bukan Node 18/20.
 
-## 16. Struktur repository
+## 17. Struktur repository
 
 ```text
 src/
@@ -515,7 +544,7 @@ docs/DOKUMENTASI_LEGACY.md  Arsip implementasi sebelum redesign
 
 `src/main.tsx` hanya memuat design system aktif. Provider state demo dan mekanisme terjemahan dengan mutasi DOM lama tidak dipasang dalam aplikasi aktif.
 
-## 17. Model data dan migrasi
+## 18. Model data dan migrasi
 
 ### 17.1 Entitas
 
@@ -590,7 +619,7 @@ Migrasi dijalankan saat registrasi workspace setelah inisialisasi database. Seti
 
 Tabel / state lama tidak dihapus. Konten awal dapat diterbitkan sebagai revision dari library lama; completion atau nilai demo tidak diimpor sebagai pencapaian individu. Migrasi balik otomatis belum disediakan. Backup sebelum upgrade wajib untuk lingkungan yang berisi data nyata.
 
-## 18. Kontrak API
+## 19. Kontrak API
 
 ### 18.1 Konvensi
 
@@ -721,7 +750,7 @@ Request import adalah `{ "csv": "..." }`. Maksimal 5.000 baris, string 2.000.000
 
 `/api/product-state`, `/api/product-actions`, `/api/admin`, `/api/quiz`, `/api/audit-logs`, serta endpoint publik sertifikat / simulasi lama dinonaktifkan default. `LEGACY_API_ENABLED=true` hanya untuk review migrasi terkontrol. Mengaktifkannya membuka model perilaku lama yang tidak menjadi sumber kebenaran workspace.
 
-## 19. Identitas dan akses
+## 20. Identitas dan akses
 
 ### 19.1 Password dan sesi
 
@@ -767,7 +796,7 @@ OIDC_ORG_SLUG=<existing-organization-slug>
 
 Daftarkan redirect URI persis `https://awareness.example.com/api/auth/sso/callback` pada IdP. Jangan memasukkan secret ke frontend. Konfigurasi harus diuji pada IdP organisasi; pengujian lokal belum membuktikan login produksi, logout federasi, atau kompatibilitas provider tertentu.
 
-## 20. Keamanan dan privasi
+## 21. Keamanan dan privasi
 
 ### Kontrol aktif
 
@@ -799,7 +828,7 @@ Setting ini tidak menghapus seluruh profil, hasil belajar, audit, sertifikat, la
 
 Menggunakan data individual untuk keputusan personal yang berdampak membutuhkan review tata kelola organisasi; skor awareness tidak dirancang sebagai penilaian kelayakan kerja atau ukuran karakter seseorang.
 
-## 21. Notifikasi dan automation
+## 22. Notifikasi dan automation
 
 ### 21.1 In-app
 
@@ -836,7 +865,7 @@ Reminder otomatis memeriksa tugas belum selesai dalam tiga hari sebelum due pada
 
 `worker_health` memberikan waktu siklus dan error terakhir. Liveness `/api/health` hanya berarti API hidup, bukan SMTP / IdP / worker berhasil.
 
-## 22. Integrasi
+## 23. Integrasi
 
 | Integrasi | Status implementasi |
 | --- | --- |
@@ -851,7 +880,7 @@ Reminder otomatis memeriksa tugas belum selesai dalam tiga hari sebelum due pada
 
 UI menggunakan status sesuai kenyataan. “Configured” berarti konfigurasi tersedia, bukan bukti koneksi sehat. OIDC tidak otomatis membuat Entra, Google, atau SCIM tersambung. Tidak ada izin external account yang diminta hanya dengan membuka halaman Integrations.
 
-## 23. Design system dan aksesibilitas
+## 24. Design system dan aksesibilitas
 
 ### Visual
 
@@ -884,7 +913,7 @@ Teks UI aktif menggunakan pasangan ID / EN dalam komponen React, bukan mengganti
 
 Nama kursus, isi materi, alasan audit yang disimpan, dan beberapa judul notifikasi adalah data tersimpan, bukan terjemahan otomatis. Label ekspor PDF / CSV masih Inggris. Jangan menyebut seluruh output aplikasi sudah bilingual tanpa pengecualian.
 
-## 24. Instalasi dan konfigurasi
+## 25. Instalasi dan konfigurasi
 
 ### 24.1 Prasyarat
 
@@ -964,7 +993,7 @@ PUBLIC_APP_URL production harus HTTPS. Jangan menggunakan origin wildcard atau m
 | `npm run test:e2e` | Build dan browser acceptance |
 | `npm run format:check` | Konsistensi format file workspace |
 
-## 25. Deployment dan operasional
+## 26. Deployment dan operasional
 
 ### 25.1 Topologi yang didukung saat ini
 
@@ -1020,7 +1049,7 @@ SQLite dan query agregasi saat ini cocok untuk runtime lokal / single-node yang 
 
 Untuk multi-instance, diperlukan adapter PostgreSQL, migrasi schema, pagination / aggregate query yang efisien, distributed rate limit, worker terpisah, observability, dan uji contention / recovery. Tidak cukup mengganti DATABASE_PATH menjadi connection string PostgreSQL.
 
-## 26. Testing
+## 27. Testing
 
 ### 26.1 Backend
 
@@ -1068,7 +1097,7 @@ Hasil lokal: 21 tes backend dan dua skenario browser telah lulus. Hasil final / 
 
 Tes tidak membuktikan keamanan absolut. Penambahan fitur perlu tes ownership, tenant, role, happy path, empty state, failure, retry, dan race / duplicate submission yang relevan.
 
-## 27. Troubleshooting
+## 28. Troubleshooting
 
 | Gejala | Penyebab yang perlu diperiksa | Tindakan |
 | --- | --- | --- |
@@ -1092,7 +1121,7 @@ Tes tidak membuktikan keamanan absolut. Penambahan fitur perlu tes ownership, te
 
 Saat meminta bantuan, berikan code error, endpoint, waktu, role, dan langkah reproduksi tanpa password, cookie, OTP, token reset, atau payload rahasia.
 
-## 28. Batasan dan backlog
+## 29. Batasan dan backlog
 
 Implementasi ini merupakan fondasi produk yang lebih matang dan dapat diuji lokal, bukan klaim seluruh brief enterprise selesai. Backlog penting:
 
@@ -1112,7 +1141,7 @@ Implementasi ini merupakan fondasi produk yang lebih matang dan dapat diuji loka
 
 Penentuan production readiness harus mempertimbangkan populasi, threat model, regulasi yang berlaku, SLA, dan hasil uji deployment nyata. Dokumen ini bukan opini kepatuhan hukum.
 
-## 29. Contoh penggunaan
+## 30. Contoh penggunaan
 
 ### Program onboarding karyawan baru
 
@@ -1130,7 +1159,7 @@ Karyawan menerima email yang meminta password. Ia tidak memasukkan password atau
 
 GRC memilih campaign dan mengekspor Compliance Evidence. ID sertifikat digunakan untuk memeriksa validitas terkini. Reviewer menyimpan konteks periode, definisi completion, dan batas laporan. PDF / CSV tidak diperlakukan sebagai pengganti audit trail atau bukti PKI.
 
-## 30. Glosarium dan referensi
+## 31. Glosarium dan referensi
 
 | Istilah | Arti |
 | --- | --- |

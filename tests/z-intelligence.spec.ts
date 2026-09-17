@@ -54,9 +54,7 @@ test("risk context, evidence ledger, content review, practice, and employee priv
   );
   expect(signal.status()).toBe(201);
   await page.reload();
-  await page
-    .getByRole("tab", { name: "Why this score?", exact: true })
-    .click();
+  await page.getByRole("tab", { name: "Why this score?", exact: true }).click();
   await expect(page.locator(".intel-ledger")).toContainText(
     "payment-redirection",
   );
@@ -76,7 +74,9 @@ test("risk context, evidence ledger, content review, practice, and employee priv
   await expect(
     dialog.getByRole("button", { name: "Generate with AI" }),
   ).toBeDisabled();
-  await dialog.getByRole("button", { name: "Create manual draft" }).click();
+  await dialog
+    .getByRole("button", { name: "Create draft", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Finance verification challenge" }),
   ).toBeVisible();
@@ -143,6 +143,9 @@ test("new administrative views load without errors on desktop and mobile", async
     "/admin/simulations",
     "/admin/reports",
     "/admin/integrations",
+    "/admin/integrations/signals",
+    "/admin/reports/outcomes",
+    "/admin/human-risk/overview",
   ]) {
     await page.goto(path);
     await expect(page.locator("#main-content h1").first()).toBeVisible();
@@ -161,6 +164,7 @@ test("new administrative views load without errors on desktop and mobile", async
     await page.setViewportSize({ width: 1440, height: 1000 });
   }
   await page.goto("/admin");
+  await expect(page.locator("#main-content h1")).toBeVisible();
   await expect(page.locator(".skeleton-page")).toHaveCount(0);
   await page.screenshot({
     path: info.outputPath("intelligence-overview-desktop.png"),

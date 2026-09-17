@@ -269,7 +269,7 @@ export function EmployeeHome2() {
     </div>
   );
 }
-function CoachingMoment({
+export function CoachingMoment({
   coaching: c,
   onClose,
   onSaved,

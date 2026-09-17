@@ -1,6 +1,6 @@
 # AVERIS — Product Maturity: Implementasi dan Penerimaan
 
-Status per 9 September 2026. Panduan produk, alur, stack, API, operasi, serta batasan detail ada di [DOKUMENTASI_LENGKAP.md](DOKUMENTASI_LENGKAP.md).
+Status per 13 September 2026. Panduan produk, alur, stack, API, operasi, serta batasan detail ada di [DOKUMENTASI_LENGKAP.md](DOKUMENTASI_LENGKAP.md).
 
 ## Hasil implementasi
 
@@ -8,11 +8,19 @@ Route utama telah menggunakan workspace baru dengan navigasi enam menu admin dan
 
 Model data utama sudah dinormalisasi: program, audiens, revisi konten, assignment personal, asesmen, attempt, ledger skor, phishing report, sertifikat, notifikasi, dan delivery job. API lama dinonaktifkan default. Data legacy dipertahankan untuk review migrasi, tidak diubah menjadi skor atau completion individu palsu.
 
+Public website kini memiliki ecosystem route terpisah dari workspace: platform,
+product pages, solutions, interactive tour, self-service demo, request demo,
+resource hubs, documentation, academy, security, integrations, support, dan
+awareness maturity tool. Homepage diprerender; route publik lain dihidangkan
+oleh SPA fallback. Demo memakai data fiktif dan tidak mengakses data tenant.
+Detail route dan batas capability ada di [PUBLIC_WEBSITE.md](docs/PUBLIC_WEBSITE.md).
+
 ## Matriks penerimaan
 
 | Area | Bukti yang tersedia | Status / batas |
 | --- | --- | --- |
 | Navigasi / design system | Halaman utama dan mobile diperiksa browser | Implemented; audit semua viewport belum dilakukan |
+| Public website ecosystem | Route public, product frames, tour, demo, request demo, resources, docs, security | Implemented; content masih local typed data, bukan CMS |
 | Onboarding pengguna | Invite, CSV, temporary password, edit, deactivate | Backend diuji; pengiriman undangan nyata membutuhkan SMTP |
 | Kelompok | Tenant validation, dedupe member, pilihan audiens | Backend diuji; UI edit kelompok existing belum lengkap |
 | Kampanye | Builder lima langkah, launch, lifecycle, optimistic version | Browser dan backend diuji |
@@ -40,6 +48,7 @@ Model data utama sudah dinormalisasi: program, audiens, revisi konten, assignmen
 - `npm test`: 21 tes lulus, terdiri dari 12 workspace dan sembilan compatibility/security legacy.
 - `npm run test:e2e`: dua skenario Chromium lulus, tanpa page error yang ditangkap suite.
 - `npm run build`: TypeScript dan bundling Vite lulus.
+- `npx playwright test tests/marketing.spec.ts`: enam skenario marketing lulus, termasuk route public inti, tour progression, demo mode switching, maturity tool, responsive width, dan Axe check.
 - `npm run format:check`: lulus pemeriksaan format file workspace.
 - `npm audit --omit=dev`: tidak menemukan kerentanan dependency produksi pada pemeriksaan ini; bukan pengganti audit keamanan aplikasi.
 - Pemeriksaan axe pada overview lulus aturan WCAG yang dipilih suite, termasuk contrast yang diperbaiki.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Link,
   useNavigate,
@@ -46,7 +46,7 @@ function Metrics({ s, score = true }: { s: any; score?: boolean }) {
     <div className="metric-grid">
       {score && (
         <Metric
-          label="Awareness Score"
+          label={t("Awareness Score", "Skor Kesadaran")}
           value={value(s.score)}
           note={
             s.change !== null
@@ -111,10 +111,133 @@ function RiskDistribution({ data }: { data: any }) {
     </div>
   );
 }
+function EvidenceSummary({ summary: s }: { summary: any }) {
+  const { t } = useLocale();
+  return (
+    <section className="sheet evidence-summary">
+      <span className="eyebrow">
+        {t("AWARENESS · LAST 30 DAYS", "AWARENESS · 30 HARI TERAKHIR")}
+      </span>
+      <div className="score-line">
+        <strong>{s.score ?? "—"}</strong>
+        {s.score !== null && <span>/ 100</span>}
+      </div>
+      <p>
+        {s.score === null
+          ? t(
+              "Unmeasured. Start with a baseline to establish evidence.",
+              "Belum terukur. Mulai dengan asesmen awal untuk mengumpulkan bukti.",
+            )
+          : s.componentCoverage < 100 || s.coverage < 100
+            ? t(
+                "Measured with partial evidence. Read the score together with coverage.",
+                "Diukur dengan bukti parsial. Baca skor bersama cakupannya.",
+              )
+            : t(
+                "All active employees and score components have measured evidence.",
+                "Seluruh karyawan aktif dan komponen skor memiliki bukti terukur.",
+              )}
+      </p>
+      <div className="row">
+        <span>{t("Employees measured", "Karyawan terukur")}</span>
+        <strong>{value(s.coverage, "%")}</strong>
+      </div>
+      <div className="row">
+        <span>
+          {t("Average component coverage", "Rata-rata cakupan komponen")}
+        </span>
+        <strong>{value(s.componentCoverage, "%")}</strong>
+      </div>
+      <small>
+        {s.change === null
+          ? t(
+              "No comparable previous measurement.",
+              "Belum ada pengukuran sebelumnya yang sebanding.",
+            )
+          : `${s.change > 0 ? "+" : ""}${s.change} ${t("points compared with the start of this period.", "poin dibandingkan awal periode ini.")}`}
+      </small>
+      <Link className="text-link row" to="/admin/awareness">
+        {t("See why awareness changed", "Lihat penyebab perubahan awareness")}{" "}
+        <ArrowRight size={15} />
+      </Link>
+    </section>
+  );
+}
+function OperationalAttention() {
+  const { t } = useLocale();
+  const inbox = useData("/phishing");
+  const delivery = useData("/settings");
+  const waiting = inbox.data?.reports.filter((report: any) =>
+    ["Submitted", "Reviewing"].includes(report.status),
+  ).length;
+  const failed =
+    delivery.data?.jobCounts.find((job: any) => job.status === "Failed")
+      ?.count || 0;
+  return (
+    <>
+      <ErrorNotice error={inbox.error} retry={inbox.reload} />
+      <ErrorNotice error={delivery.error} retry={delivery.reload} />
+      {(inbox.loading || delivery.loading) && (
+        <small role="status">
+          {t(
+            "Checking inbox and delivery…",
+            "Memeriksa kotak masuk dan pengiriman…",
+          )}
+        </small>
+      )}
+      {Boolean(waiting) && (
+        <article className="priority">
+          <span>↗</span>
+          <div>
+            <h3>
+              {waiting}{" "}
+              {t(
+                "phishing reports need review",
+                "laporan phishing perlu ditinjau",
+              )}
+            </h3>
+            <p>
+              {t(
+                "Review the message and record a classification.",
+                "Tinjau pesan dan catat klasifikasinya.",
+              )}
+            </p>
+          </div>
+          <Link to="/admin/reports/inbox">
+            {t("Review inbox", "Tinjau kotak masuk")}
+            <ArrowUpRight size={13} />
+          </Link>
+        </article>
+      )}
+      {Boolean(failed) && (
+        <article className="priority">
+          <span>!</span>
+          <div>
+            <h3>
+              {failed} {t("messages failed delivery", "pesan gagal dikirim")}
+            </h3>
+            <p>
+              {t(
+                "Inspect delivery health and retry failed messages.",
+                "Periksa kesehatan pengiriman dan coba ulang pesan gagal.",
+              )}
+            </p>
+          </div>
+          <Link to="/admin/settings/health">
+            {t("Delivery health", "Kesehatan pengiriman")}
+            <ArrowUpRight size={13} />
+          </Link>
+        </article>
+      )}
+    </>
+  );
+}
+
 export function Overview() {
   const r = useData("/summary?period=30");
   const campaigns = useData("/campaigns");
   const { t } = useLocale();
+  const { user } = useAuth();
   const d = r.data;
   const priorities = d
     ? [
@@ -210,8 +333,7 @@ export function Overview() {
       <Loading resource={r}>
         {d && (
           <>
-            <Metrics s={d.summary} />
-            <div className="split">
+            <div className="split overview-command">
               <section className="sheet">
                 <div className="section-head">
                   <div>
@@ -230,6 +352,9 @@ export function Overview() {
                   </div>
                 </div>
                 <div className="priority-list">
+                  {["super_admin", "admin"].includes(user?.role || "") && (
+                    <OperationalAttention />
+                  )}
                   {priorities.length ? (
                     priorities.map((p, i) => (
                       <article className="priority" key={p.title}>
@@ -247,8 +372,8 @@ export function Overview() {
                   ) : (
                     <Empty
                       title={t(
-                        "No outstanding priorities",
-                        "Tidak ada prioritas tertunda",
+                        "Learning is on track",
+                        "Pembelajaran sesuai rencana",
                       )}
                       description={t(
                         "Continue monitoring learning and the next measurement.",
@@ -258,7 +383,10 @@ export function Overview() {
                   )}
                 </div>
               </section>
-              <RiskDistribution data={d} />
+              <EvidenceSummary summary={d.summary} />
+            </div>
+            <div className="section">
+              <Metrics s={d.summary} score={false} />
             </div>
             <section className="section">
               <div className="section-head">
@@ -297,39 +425,51 @@ export function Overview() {
                 />
               )}
             </section>
-            <div className="metric-grid section">
-              <Metric
-                label={t("Participation", "Partisipasi")}
-                value={value(d.summary.participation, "%")}
-                note={t(
-                  "Assigned employees who started",
-                  "Karyawan yang mulai mengerjakan",
-                )}
-              />
-              <Metric
-                label={t("Reporting rate", "Tingkat pelaporan")}
-                value={value(d.summary.reportingRate, "%")}
-                note={t(
-                  "Reported / delivered simulations",
-                  "Dilaporkan / simulasi terkirim",
-                )}
-              />
-              <Metric
-                label={t("Simulation click rate", "Tingkat klik simulasi")}
-                value={value(d.summary.clickRate, "%")}
-                note={t(
-                  "Clicked / delivered simulations",
-                  "Diklik / simulasi terkirim",
-                )}
-              />
-              <Metric
-                label={t("Evidence coverage", "Cakupan bukti")}
-                value={value(d.summary.coverage, "%")}
-                note={t(
-                  "Employees with measured signals",
-                  "Karyawan dengan sinyal terukur",
-                )}
-              />
+            <div className="split section">
+              <RiskDistribution data={d} />
+              <section className="sheet">
+                <h2>
+                  {t(
+                    "Participation and security behavior",
+                    "Partisipasi dan perilaku keamanan",
+                  )}
+                </h2>
+                {[
+                  [t("Participation", "Partisipasi"), d.summary.participation],
+                  [
+                    t(
+                      "Simulation reporting rate",
+                      "Tingkat pelaporan simulasi",
+                    ),
+                    d.summary.reportingRate,
+                  ],
+                  [
+                    t("Simulation click rate", "Tingkat klik simulasi"),
+                    d.summary.clickRate,
+                  ],
+                ].map(([label, amount]) => (
+                  <div className="row" key={label}>
+                    <span>{label}</span>
+                    <strong>
+                      {amount === null
+                        ? t("Unmeasured", "Belum terukur")
+                        : `${amount}%`}
+                    </strong>
+                  </div>
+                ))}
+                <p>
+                  <small>
+                    {t(
+                      "Simulation rates use delivered messages. A click and a report can both occur on the same message.",
+                      "Tingkat simulasi dihitung dari pesan terkirim. Satu pesan dapat diklik sekaligus dilaporkan.",
+                    )}
+                  </small>
+                </p>
+                <Link className="text-link row" to="/admin/awareness">
+                  {t("Understand the evidence", "Pahami bukti")}{" "}
+                  <ArrowRight size={15} />
+                </Link>
+              </section>
             </div>
           </>
         )}
@@ -389,6 +529,7 @@ function CampaignTable({ campaigns }: { campaigns: any[] }) {
 export function Campaigns() {
   const r = useData("/campaigns");
   const { t } = useLocale();
+  const { user } = useAuth();
   const [status, setStatus] = useState("All");
   const [search, setSearch] = useState("");
   const [templates, setTemplates] = useState(false);
@@ -408,9 +549,11 @@ export function Campaigns() {
         )}
         actions={
           <>
-            <Link className="btn secondary" to="/admin/human-risk/autopilot">
-              Continuous programs
-            </Link>
+            {user?.role !== "manager" && (
+              <Link className="btn secondary" to="/admin/human-risk/autopilot">
+                Continuous programs
+              </Link>
+            )}
             <Button variant="secondary" onClick={() => setTemplates(true)}>
               {t("Use a template", "Gunakan templat")}
             </Button>
@@ -561,6 +704,18 @@ export function CampaignBuilder() {
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const draftId = useRef(id);
+  const version = useRef<number | undefined>(undefined);
+  const edits = useRef(0);
+  const saving = useRef(false);
+  const saveRef = useRef<() => Promise<boolean>>(async () => false);
+  const markDirty = () => {
+    edits.current += 1;
+    setDirty(true);
+    setError(null);
+  };
   const [mode, setMode] = useState(params.has("employee") ? "selected" : "all");
   const [dept, setDept] = useState(params.get("department") || "");
   const template = templateNames[Number(params.get("template"))];
@@ -600,6 +755,8 @@ export function CampaignBuilder() {
         version: c.version,
       });
       setMode("selected");
+      version.current = c.version;
+      setDirty(false);
     }
   }, [id, existing.data]);
   const employees = (people.data?.people || []).filter(
@@ -635,7 +792,10 @@ export function CampaignBuilder() {
           .map((c: any) => c.id),
       }));
   }, [library.data]);
-  const set = (key: string, v: any) => setForm((f) => ({ ...f, [key]: v }));
+  const set = (key: string, v: any) => {
+    markDirty();
+    setForm((f) => ({ ...f, [key]: v }));
+  };
   const toggle = (key: "userIds" | "courseIds", v: string) =>
     set(
       key,
@@ -649,45 +809,129 @@ export function CampaignBuilder() {
     0,
   );
   const canLaunch = user?.role !== "manager";
-  const save = async (launch: boolean) => {
+  const autosaveEnabled =
+    canLaunch && (!id || existing.data?.campaign?.status === "Draft");
+  const save = async (launch: boolean, leave = true): Promise<boolean> => {
+    if (saving.current) return false;
+    saving.current = true;
+    const capturedEdits = edits.current;
     setBusy(true);
     setError(null);
     try {
       const payload = {
         ...form,
+        version: version.current ?? form.version,
         userIds: audience.map((u: any) => u.id),
         startAt: form.startAt ? new Date(form.startAt).toISOString() : null,
         dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : null,
         simulation: form.simulation || null,
       };
       const saved = await mutate<{ id: string }>(
-        id ? `/campaigns/${id}` : "/campaigns",
+        draftId.current ? `/campaigns/${draftId.current}` : "/campaigns",
         payload,
-        id ? "PUT" : "POST",
+        draftId.current ? "PUT" : "POST",
       );
-      if (launch) {
-        const current = await apiRequest<any>(
-          `/api/workspace/campaigns/${saved.id}`,
-        );
+      draftId.current = saved.id;
+      const current = await apiRequest<any>(
+        `/api/workspace/campaigns/${saved.id}`,
+      );
+      version.current = current.campaign.version;
+      if (launch)
         await mutate(`/campaigns/${saved.id}/action`, {
           action: "launch",
-          version: current.campaign.version,
+          version: version.current,
         });
-      }
-      navigate(`/admin/campaigns/${saved.id}`);
+      setDirty(edits.current !== capturedEdits);
+      setSavedAt(
+        new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      );
+      if (leave) navigate(`/admin/campaigns/${saved.id}`);
+      return true;
     } catch (e) {
       setError(e);
+      return false;
     } finally {
+      saving.current = false;
       setBusy(false);
     }
   };
-  const valid = [
+  saveRef.current = () => save(false, false);
+  const validations = [
     form.name.trim().length >= 3 && form.objective.trim().length >= 3,
     audience.length > 0,
-    form.courseIds.length > 0,
+    selected.length > 0,
     true,
-    Boolean(form.dueAt) && new Date(form.dueAt) > new Date(),
-  ][step];
+    Boolean(form.dueAt) &&
+      new Date(form.dueAt) > new Date() &&
+      (!form.startAt || new Date(form.dueAt) > new Date(form.startAt)),
+  ];
+  const valid = validations[step];
+  useEffect(() => {
+    if (
+      !dirty ||
+      busy ||
+      error ||
+      !autosaveEnabled ||
+      !validations[0] ||
+      people.loading ||
+      library.loading ||
+      (id && existing.data?.campaign?.status !== "Draft")
+    )
+      return;
+    if (
+      form.startAt &&
+      form.dueAt &&
+      new Date(form.startAt) >= new Date(form.dueAt)
+    )
+      return;
+    const timer = setTimeout(() => void saveRef.current(), 1800);
+    return () => clearTimeout(timer);
+  }, [
+    form,
+    mode,
+    dept,
+    groupId,
+    dirty,
+    busy,
+    error,
+    autosaveEnabled,
+    people.loading,
+    library.loading,
+    existing.data,
+  ]);
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (dirty) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    const guard = (event: MouseEvent) => {
+      const anchor = (event.target as Element).closest?.("a[href]");
+      if (!dirty || !anchor || anchor.getAttribute("target") === "_blank")
+        return;
+      if (
+        !window.confirm(
+          t(
+            "Leave with unsaved changes? Use Save draft to keep your work.",
+            "Keluar dengan perubahan belum tersimpan? Gunakan Simpan draf untuk menyimpan pekerjaan.",
+          ),
+        )
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    window.addEventListener("beforeunload", warn);
+    window.document.addEventListener("click", guard, true);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      window.document.removeEventListener("click", guard, true);
+    };
+  }, [dirty]);
   return (
     <div className="builder">
       <Link className="text-link" to="/admin/campaigns">
@@ -709,7 +953,7 @@ export function CampaignBuilder() {
           t("Basics", "Dasar"),
           t("Audience", "Audiens"),
           t("Learning", "Pembelajaran"),
-          t("Measurement", "Pengukuran"),
+          t("Measure & simulate", "Ukur & simulasikan"),
           t("Schedule & review", "Jadwal & tinjauan"),
         ].map((s, i) => (
           <li
@@ -717,10 +961,49 @@ export function CampaignBuilder() {
             className={step === i ? "active" : ""}
             aria-current={step === i ? "step" : undefined}
           >
-            {s}
+            <button
+              type="button"
+              disabled={i > step && !validations.slice(0, i).every(Boolean)}
+              onClick={() => setStep(i)}
+            >
+              <span>
+                {i < step && validations[i] ? <Check size={14} /> : i + 1}
+              </span>
+              {s}
+            </button>
           </li>
         ))}
       </ol>
+      <div className="builder-save-status" role="status">
+        <span>
+          {t("Step", "Langkah")} {step + 1} / 5
+        </span>
+        <span>
+          {busy
+            ? t("Saving draft…", "Menyimpan draf…")
+            : dirty
+              ? autosaveEnabled
+                ? t(
+                    "Unsaved changes · autosave when fields are valid",
+                    "Perubahan belum tersimpan · tersimpan otomatis setelah isian valid",
+                  )
+                : t(
+                    "Unsaved changes · save for admin review",
+                    "Perubahan belum tersimpan · simpan untuk tinjauan admin",
+                  )
+              : savedAt
+                ? `${t("Draft saved", "Draf tersimpan")} · ${savedAt}`
+                : autosaveEnabled
+                  ? t(
+                      "Your draft saves automatically after you complete the basics.",
+                      "Draf tersimpan otomatis setelah informasi dasar lengkap.",
+                    )
+                  : t(
+                      "Use Save draft to preserve your changes.",
+                      "Gunakan Simpan draf untuk menyimpan perubahan Anda.",
+                    )}
+        </span>
+      </div>
       <ErrorNotice error={error} />
       <Loading resource={people}>
         <Loading resource={library}>
@@ -785,7 +1068,10 @@ export function CampaignBuilder() {
                   <Field label={t("Select audience", "Pilih audiens")}>
                     <select
                       value={mode}
-                      onChange={(e) => setMode(e.target.value)}
+                      onChange={(e) => {
+                        markDirty();
+                        setMode(e.target.value);
+                      }}
                     >
                       <option value="all">
                         {t("All employees", "Semua karyawan")}
@@ -803,7 +1089,10 @@ export function CampaignBuilder() {
                     <Field label={t("Department", "Departemen")}>
                       <select
                         value={dept}
-                        onChange={(e) => setDept(e.target.value)}
+                        onChange={(e) => {
+                          markDirty();
+                          setDept(e.target.value);
+                        }}
                       >
                         <option value="">
                           {t("Choose department", "Pilih departemen")}
@@ -820,7 +1109,10 @@ export function CampaignBuilder() {
                       <Field label={t("Group", "Kelompok")}>
                         <select
                           value={groupId}
-                          onChange={(e) => setGroupId(e.target.value)}
+                          onChange={(e) => {
+                            markDirty();
+                            setGroupId(e.target.value);
+                          }}
                         >
                           <option value="">
                             {t("Choose a group", "Pilih kelompok")}
@@ -884,14 +1176,24 @@ export function CampaignBuilder() {
                 <div className="builder-section-heading">
                   <div>
                     <h2>{t("Choose learning", "Pilih pembelajaran")}</h2>
-                    <p>{t("Select one or more published modules for this campaign.", "Pilih satu atau beberapa modul terbit untuk kampanye ini.")}</p>
+                    <p>
+                      {t(
+                        "Select one or more published modules for this campaign.",
+                        "Pilih satu atau beberapa modul terbit untuk kampanye ini.",
+                      )}
+                    </p>
                   </div>
-                  <strong className="builder-total">{duration} {t("min total", "mnt total")}</strong>
+                  <strong className="builder-total">
+                    {duration} {t("min total", "mnt total")}
+                  </strong>
                 </div>
                 {courses.length ? (
                   <div className="campaign-learning-grid">
                     {courses.map((c: any) => (
-                      <label className={`campaign-learning-card ${form.courseIds.includes(c.id) ? "selected" : ""}`} key={c.id}>
+                      <label
+                        className={`campaign-learning-card ${form.courseIds.includes(c.id) ? "selected" : ""}`}
+                        key={c.id}
+                      >
                         <input
                           type="checkbox"
                           checked={form.courseIds.includes(c.id)}
@@ -899,15 +1201,23 @@ export function CampaignBuilder() {
                         />
                         <div className="campaign-learning-card-main">
                           <div className="campaign-learning-card-top">
-                            <span className="learning-origin">{c.isDefault ? t("AVERIS default", "Default AVERIS") : t("Created by your team", "Dibuat tim Anda")}</span>
+                            <span className="learning-origin">
+                              {c.isDefault
+                                ? t("AVERIS default", "Default AVERIS")
+                                : t("Created by your team", "Dibuat tim Anda")}
+                            </span>
                             <Status value={c.document.difficulty} />
                           </div>
                           <h3>{c.document.title}</h3>
                           <p>{c.document.description}</p>
                           <div className="campaign-learning-meta">
                             <span>{c.document.category}</span>
-                            <span>{c.document.duration} {t("min", "menit")}</span>
-                            <span>{t("Pass", "Lulus")} {c.document.passingScore}%</span>
+                            <span>
+                              {c.document.duration} {t("min", "menit")}
+                            </span>
+                            <span>
+                              {t("Pass", "Lulus")} {c.document.passingScore}%
+                            </span>
                           </div>
                         </div>
                       </label>
@@ -1093,6 +1403,26 @@ export function CampaignBuilder() {
                 </dl>
               </>
             )}
+            <div className="builder-summary">
+              <span>
+                <Users size={14} />
+                {audience.length} {t("participants", "peserta")}
+              </span>
+              <span>
+                {selected.length} {t("courses", "materi")}
+              </span>
+              <span>
+                {duration} {t("min per participant", "menit per peserta")}
+              </span>
+            </div>
+            {step === 4 && !valid && (
+              <p className="notice warning" role="status">
+                {t(
+                  "Choose a future deadline after the start date to continue.",
+                  "Pilih tenggat mendatang setelah tanggal mulai untuk melanjutkan.",
+                )}
+              </p>
+            )}
             <div className="builder-footer">
               <Button
                 variant="secondary"
@@ -1120,7 +1450,7 @@ export function CampaignBuilder() {
                   </Button>
                 ) : (
                   <Button
-                    disabled={!valid || busy}
+                    disabled={!validations.every(Boolean) || busy}
                     onClick={() => void save(canLaunch && !id)}
                   >
                     {busy
@@ -1128,7 +1458,7 @@ export function CampaignBuilder() {
                       : id
                         ? t("Save changes", "Simpan perubahan")
                         : canLaunch
-                          ? t("Publish campaign", "Terbitkan kampanye")
+                          ? t("Launch campaign", "Luncurkan kampanye")
                           : t(
                               "Save for admin review",
                               "Simpan untuk tinjauan admin",
@@ -1162,6 +1492,7 @@ export function CampaignBuilder() {
 export function CampaignDetail() {
   const { id } = useParams();
   const r = useData(`/campaigns/${id}`);
+  const owners = useData("/people");
   const { t } = useLocale();
   const { user } = useAuth();
   const date = useDate();
@@ -1274,7 +1605,38 @@ export function CampaignDetail() {
               </>
             }
           />
-          <p>{c.objective}</p>
+          <div className="campaign-context">
+            <p>{c.objective}</p>
+            <span>
+              {t("Owner", "Penanggung jawab")}:{" "}
+              <strong>
+                {owners.data?.people.find((p: any) => p.id === c.owner_id)
+                  ?.name || "—"}
+              </strong>
+            </span>
+          </div>
+          {c.summary.overdue > 0 && (
+            <div className="notice warning row">
+              <span>
+                {c.summary.overdue}{" "}
+                {t(
+                  "activities are overdue. Review participants and send a reminder.",
+                  "aktivitas melewati tenggat. Tinjau peserta dan kirim pengingat.",
+                )}
+              </span>
+              <Button variant="quiet" onClick={() => setTab("people")}>
+                {t("Review participants", "Tinjau peserta")}
+              </Button>
+            </div>
+          )}
+          {c.status === "Draft" && (
+            <p className="notice">
+              {t(
+                "Draft: review the audience, learning, and schedule before launch. No assignments have been sent.",
+                "Draf: tinjau audiens, pembelajaran, dan jadwal sebelum peluncuran. Belum ada tugas yang dikirim.",
+              )}
+            </p>
+          )}
           <div className="section">
             <Metrics s={c.summary} />
           </div>
@@ -1520,7 +1882,7 @@ export function PeopleTable({ people }: { people: any[] }) {
             <th>{t("Score", "Nilai")}</th>
             <th>{t("Risk", "Risiko")}</th>
             <th>{t("Learning", "Pembelajaran")}</th>
-            <th>{t("Completion", "Penyelesaian")}</th>
+            <th>{t("Account", "Akun")}</th>
             <th className="secondary-column">
               {t("Last activity", "Aktivitas terakhir")}
             </th>
@@ -1534,15 +1896,25 @@ export function PeopleTable({ people }: { people: any[] }) {
                 <small>{u.email}</small>
               </td>
               <td>{u.department}</td>
-              <td>{value(u.score)}</td>
+              <td>
+                {u.score === null ? t("Unmeasured", "Belum terukur") : u.score}
+                <small>
+                  {u.score !== null
+                    ? `${u.coverage}% ${t("evidence", "bukti")}`
+                    : ""}
+                </small>
+              </td>
               <td>
                 <Status value={u.risk} />
               </td>
               <td>
-                {u.completed}/{u.assigned}
+                <Progress value={u.completion} />
+                <small>
+                  {u.completed}/{u.assigned} {t("complete", "selesai")}
+                </small>
               </td>
               <td>
-                <Progress value={u.completion} />
+                <Status value={u.active ? "Active" : "Inactive"} />
               </td>
               <td className="secondary-column">{date(u.lastActivity)}</td>
             </tr>
@@ -1563,6 +1935,8 @@ export function People() {
   const [status, setStatus] = useState(params.get("status") || "");
   const [add, setAdd] = useState(false);
   const [manageGroups, setManageGroups] = useState(false);
+  const groups = useData("/groups");
+  const [group, setGroup] = useState("");
   const [importResult, setImportResult] = useState<any>(null);
   const [error, setError] = useState<unknown>(null);
   const canManage = user?.role !== "manager";
@@ -1572,6 +1946,10 @@ export function People() {
       `${u.name} ${u.email}`.toLowerCase().includes(search.toLowerCase()) &&
       (!dept || u.department === dept) &&
       (!risk || u.risk === risk) &&
+      (!group ||
+        groups.data?.groups
+          .find((g: any) => g.id === group)
+          ?.userIds.includes(u.id)) &&
       (!status ||
         (status === "active"
           ? u.active
@@ -1680,6 +2058,18 @@ export function People() {
           <option value="active">{t("Active", "Aktif")}</option>
           <option value="inactive">{t("Inactive", "Nonaktif")}</option>
           <option value="overdue">{t("Overdue", "Terlambat")}</option>
+        </select>
+        <select
+          aria-label={t("Group", "Kelompok")}
+          value={group}
+          onChange={(e) => setGroup(e.target.value)}
+        >
+          <option value="">{t("All groups", "Semua kelompok")}</option>
+          {groups.data?.groups.map((g: any) => (
+            <option key={g.id} value={g.id}>
+              {g.name}
+            </option>
+          ))}
         </select>
         <span>
           {filtered.length} {t("people", "orang")}
@@ -1991,7 +2381,7 @@ export function EmployeeDetail() {
                     className="btn secondary"
                     to={`/admin/human-risk/people/${id}`}
                   >
-                    Human Risk Profile
+                    {t("Human Risk Profile", "Profil Risiko Manusia")}
                   </Link>
                 )}
                 <ActionLink to={`/admin/campaigns/new?employee=${id}`}>
@@ -2057,7 +2447,7 @@ export function EmployeeDetail() {
           />
           <div className="metric-grid">
             <Metric
-              label="Awareness Score"
+              label={t("Awareness Score", "Skor Kesadaran")}
               value={value(d.user.score)}
               note={`${d.user.coverage}% ${t("component coverage", "cakupan komponen")}`}
             />
@@ -2076,7 +2466,7 @@ export function EmployeeDetail() {
             onChange={setTab}
             tabs={[
               ["overview", t("Overview", "Ringkasan")],
-              ["awareness", "Awareness"],
+              ["awareness", t("Awareness", "Kesadaran")],
               ["learning", t("Learning", "Pembelajaran")],
               ["simulations", t("Simulations", "Simulasi")],
               ["certificates", t("Certificates", "Sertifikat")],
@@ -2195,7 +2585,24 @@ export function ScoreLedger({
       {components && (
         <div className="metric-grid">
           {Object.entries(components).map(([key, v]) => (
-            <Metric key={key} label={names[key]} value={v as number | null} />
+            <Metric
+              key={key}
+              label={names[key]}
+              value={
+                v === null ? t("Unmeasured", "Belum terukur") : (v as number)
+              }
+              note={
+                v === null
+                  ? t(
+                      "No evidence for this component",
+                      "Belum ada bukti untuk komponen ini",
+                    )
+                  : t(
+                      "Latest measured value / 100",
+                      "Nilai terukur terbaru / 100",
+                    )
+              }
+            />
           ))}
         </div>
       )}
@@ -2273,15 +2680,23 @@ export function Awareness() {
   return (
     <>
       <PageTitle
-        title={t("Human risk & awareness", "Risiko manusia & awareness")}
+        title={t("Awareness", "Awareness")}
         description={t(
           "Understand the evidence behind risk and decide where to intervene.",
           "Pahami bukti di balik risiko dan tentukan tindakan yang diperlukan.",
         )}
         actions={
-          <ActionLink secondary to="/methodology">
-            {t("Score methodology", "Metodologi skor")}
-          </ActionLink>
+          <>
+            <ActionLink secondary to="/admin/human-risk">
+              {t("Human risk analysis", "Analisis risiko manusia")}
+            </ActionLink>
+            <ActionLink secondary to="/admin/simulations">
+              {t("Simulations", "Simulasi")}
+            </ActionLink>
+            <ActionLink secondary to="/methodology">
+              {t("Score methodology", "Metodologi skor")}
+            </ActionLink>
+          </>
         }
       />
       <Loading resource={r}>
@@ -2321,6 +2736,25 @@ export function Awareness() {
                   <span>{t("Employees measured", "Karyawan terukur")}</span>
                   <strong>{value(d.summary.coverage, "%")}</strong>
                 </div>
+                <div className="row">
+                  <span>
+                    {t(
+                      "Average component coverage",
+                      "Rata-rata cakupan komponen",
+                    )}
+                  </span>
+                  <strong>{value(d.summary.componentCoverage, "%")}</strong>
+                </div>
+                {d.summary.score !== null &&
+                  (d.summary.componentCoverage < 100 ||
+                    d.summary.coverage < 100) && (
+                    <p className="notice warning">
+                      {t(
+                        "This score is based on partial evidence. A high score does not mean every employee or behavior has been measured.",
+                        "Skor ini berdasarkan bukti parsial. Skor tinggi tidak berarti seluruh karyawan atau perilaku sudah diukur.",
+                      )}
+                    </p>
+                  )}
                 <small>
                   {t(
                     "Coverage describes available evidence; it is not statistical confidence.",
@@ -2462,6 +2896,9 @@ export function Reports() {
         )}
         actions={
           <>
+            <ActionLink secondary to="/admin/reports/outcomes">
+              {t("Outcome analysis", "Analisis hasil")}
+            </ActionLink>
             <ActionLink secondary to="/admin/reports/certificates">
               {t("Certificates", "Sertifikat")}
             </ActionLink>
@@ -2541,10 +2978,80 @@ export function Reports() {
           <option value="Low">{t("Low", "Rendah")}</option>
         </select>
       </div>
+      <section
+        className="report-scope"
+        aria-label={t("Export scope", "Cakupan ekspor")}
+      >
+        <div>
+          <span className="eyebrow">
+            {t("REPORT SCOPE", "CAKUPAN LAPORAN")}
+          </span>
+          <h2>
+            {category === "Executive"
+              ? t("Organization outcomes", "Hasil organisasi")
+              : category === "Campaign"
+                ? t(
+                    "Program delivery and completion",
+                    "Pelaksanaan dan penyelesaian program",
+                  )
+                : category === "Employee"
+                  ? t(
+                      "Individual security records",
+                      "Catatan keamanan individu",
+                    )
+                  : t(
+                      "Traceable learning evidence",
+                      "Bukti pembelajaran yang dapat ditelusuri",
+                    )}
+          </h2>
+          <p>
+            {department || t("All departments", "Semua departemen")} ·{" "}
+            {period === "all"
+              ? t("All time", "Semua waktu")
+              : `${period} ${t("days", "hari")}`}{" "}
+            ·{" "}
+            {campaigns.data?.campaigns.find((c: any) => c.id === campaignId)
+              ?.name || t("All campaigns", "Semua kampanye")}{" "}
+            · {risk || t("All risk levels", "Semua tingkat risiko")}
+          </p>
+        </div>
+        <small>
+          {t(
+            "CSV: structured records · PDF: shareable report. Both downloads use these filters.",
+            "CSV: catatan terstruktur · PDF: laporan untuk dibagikan. Keduanya menggunakan filter ini.",
+          )}
+        </small>
+      </section>
       <Loading resource={r}>
         {r.data && (
           <>
-            <Metrics s={r.data.summary} />
+            {category === "Executive" && <Metrics s={r.data.summary} />}
+            {category === "Compliance Evidence" && (
+              <div className="evidence-register">
+                <div>
+                  <strong>{r.data.assignments.length}</strong>
+                  <span>{t("Assignment records", "Catatan tugas")}</span>
+                </div>
+                <div>
+                  <strong>{r.data.attempts.length}</strong>
+                  <span>
+                    {t(
+                      "Graded attempts in period",
+                      "Percobaan dinilai dalam periode",
+                    )}
+                  </span>
+                </div>
+                <div>
+                  <strong>
+                    {
+                      r.data.assignments.filter((a: any) => a.completed_at)
+                        .length
+                    }
+                  </strong>
+                  <span>{t("Completed assignments", "Tugas selesai")}</span>
+                </div>
+              </div>
+            )}
             {category === "Executive" ? (
               <div className="split">
                 <RiskDistribution data={r.data} />
@@ -2558,6 +3065,74 @@ export function Reports() {
                   ))}
                 </div>
               </div>
+            ) : category === "Campaign" ? (
+              <section className="sheet">
+                <h2>{t("Program progress", "Progres program")}</h2>
+                <p>
+                  {t(
+                    "Results reflect the selected scope. Open a campaign for its audience, assessment comparison, and activity history.",
+                    "Hasil mengikuti cakupan terpilih. Buka kampanye untuk melihat audiens, perbandingan asesmen, dan riwayat aktivitas.",
+                  )}
+                </p>
+                <div className="section">
+                  <Metrics s={r.data.summary} score={false} />
+                </div>
+                <div className="stack">
+                  {[
+                    ...new Set<string>(
+                      r.data.assignments.map((a: any) => a.program_id),
+                    ),
+                  ].map((programId) => {
+                    const program = campaigns.data?.campaigns.find(
+                      (c: any) => c.id === programId,
+                    );
+                    const assignments = r.data.assignments.filter(
+                      (a: any) => a.program_id === programId,
+                    );
+                    return (
+                      <div className="row" key={programId}>
+                        <div>
+                          <Link
+                            className="text-link"
+                            to={`/admin/campaigns/${programId}`}
+                          >
+                            {program?.name || assignments[0]?.program_name}
+                          </Link>
+                          <small>
+                            {assignments.length}{" "}
+                            {t("assignments in scope", "tugas dalam cakupan")}
+                          </small>
+                        </div>
+                        <Progress
+                          value={
+                            assignments.length
+                              ? Math.round(
+                                  (assignments.filter(
+                                    (a: any) => a.completed_at,
+                                  ).length /
+                                    assignments.length) *
+                                    100,
+                                )
+                              : null
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                {!r.data.assignments.length && (
+                  <Empty
+                    title={t(
+                      "No program assignments in this scope",
+                      "Belum ada tugas program dalam cakupan ini",
+                    )}
+                    description={t(
+                      "Choose a campaign or adjust the filters.",
+                      "Pilih kampanye atau sesuaikan filter.",
+                    )}
+                  />
+                )}
+              </section>
             ) : category === "Employee" ? (
               <PeopleTable people={r.data.users} />
             ) : (
@@ -2569,6 +3144,8 @@ export function Reports() {
                       <th>{t("Learning", "Pembelajaran")}</th>
                       <th>{t("Program", "Program")}</th>
                       <th>{t("Status", "Status")}</th>
+                      <th>{t("Record ID", "ID catatan")}</th>
+                      <th>{t("Completed at", "Selesai pada")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2584,6 +3161,14 @@ export function Reports() {
                         <td>{a.program_name}</td>
                         <td>
                           <Status value={a.status} />
+                        </td>
+                        <td>
+                          <code>{a.id}</code>
+                        </td>
+                        <td>
+                          {a.completed_at
+                            ? new Date(a.completed_at).toLocaleDateString()
+                            : t("Not completed", "Belum selesai")}
                         </td>
                       </tr>
                     ))}

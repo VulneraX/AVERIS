@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ShieldCheck, Sparkles } from "lucide-react";
-import { Button, ErrorNotice } from "../ui";
+import { ShieldCheck } from "lucide-react";
+import { Button, ErrorNotice, useLocale } from "../ui";
 import { act, Provenance, useIntelligence } from "./shared";
 export function ReportTriage({ reportId }: { reportId: string }) {
+  const { t } = useLocale();
   const r = useIntelligence(`/reports/${reportId}/triage`);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
@@ -12,9 +13,12 @@ export function ReportTriage({ reportId }: { reportId: string }) {
       <div className="section-head">
         <h3>
           <ShieldCheck size={16} />
-          AVERIS Respond
+          {t("Review assistance", "Bantuan tinjauan")}
         </h3>
-        <Provenance>{d?.provenance || "Human review required"}</Provenance>
+        <Provenance>
+          {d?.provenance ||
+            t("Human review required", "Tinjauan manusia diperlukan")}
+        </Provenance>
       </div>
       {d ? (
         <>
@@ -30,13 +34,18 @@ export function ReportTriage({ reportId }: { reportId: string }) {
             </ul>
           )}
           <p>
-            <strong>Suggested next step:</strong> {d.next_action}
+            <strong>
+              {t("Suggested next step:", "Saran langkah berikutnya:")}
+            </strong>{" "}
+            {d.next_action}
           </p>
         </>
       ) : (
         <p>
-          No triage analysis yet. Review the sender, context, and independent
-          evidence before classifying this report.
+          {t(
+            "No review assistance yet. Check the sender, context, and independent evidence before classifying this report.",
+            "Belum ada bantuan tinjauan. Periksa pengirim, konteks, dan bukti independen sebelum mengklasifikasikan laporan ini.",
+          )}
         </p>
       )}
       <Button
@@ -56,14 +65,25 @@ export function ReportTriage({ reportId }: { reportId: string }) {
           }
         }}
       >
-        <Sparkles size={14} />
-        {busy ? "Analyzing…" : "Request AI triage"}
+        <ShieldCheck size={14} />
+        {busy
+          ? t("Analyzing…", "Menganalisis…")
+          : t("Request review assistance", "Minta bantuan tinjauan")}
       </Button>
       <small>
         {r.data?.provider?.enabled
-          ? "AI proposes a classification; your review determines the outcome."
-          : "AI is unconfigured. Manual investigation remains available below."}{" "}
-        Reports never close automatically.
+          ? t(
+              "AI proposes a classification; your review determines the outcome.",
+              "AI mengusulkan klasifikasi; tinjauan Anda menentukan hasil.",
+            )
+          : t(
+              "Review assistance is not configured. Investigate and classify the message below.",
+              "Bantuan tinjauan belum dikonfigurasi. Selidiki dan klasifikasikan pesan di bawah.",
+            )}{" "}
+        {t(
+          "Reports never close automatically.",
+          "Laporan tidak pernah ditutup otomatis.",
+        )}
       </small>
       <ErrorNotice error={error} />
     </section>

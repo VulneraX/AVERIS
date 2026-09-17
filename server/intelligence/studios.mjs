@@ -299,10 +299,7 @@ export function registerStudios({ route, service: s, validate }) {
         approve: "Reviewed",
         publish: "Approved",
       }[input.action];
-      if (row.kind === "content" && input.action === "publish") {
-        if (row.status === "Published")
-          problem(409, "ALREADY_PUBLISHED", "This course is already published.");
-      } else if (row.status !== required)
+      if (row.status !== required)
         problem(
           409,
           "APPROVAL_REQUIRED",

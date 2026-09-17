@@ -1,0 +1,319 @@
+/* Workspace interaction polish layered on top of the shared design tokens. */
+.workspace .btn,
+.workspace .report-action,
+.workspace .sidebar nav a,
+.workspace .sidebar-secondary a,
+.workspace .icon-button,
+.workspace .text-link {
+  transition:
+    background-color var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+.workspace .btn:hover:not(:disabled),
+.workspace .report-action:hover,
+.workspace .text-link:hover {
+  transform: translateY(-1px);
+}
+.workspace .sheet,
+.workspace .metric,
+.workspace .priority,
+.workspace .table-wrap {
+  animation: workspace-enter var(--motion-normal) var(--ease-out) both;
+}
+@keyframes workspace-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace .sheet,
+  .workspace .metric,
+  .workspace .priority,
+  .workspace .table-wrap {
+    animation: none;
+  }
+  .workspace .btn,
+  .workspace .report-action,
+  .workspace .text-link {
+    transition: none;
+  }
+}
+
+/* Operational compositions use the same AVERIS surfaces and density scale. */
+.overview-command {
+  align-items: stretch;
+}
+.evidence-summary {
+  display: flex;
+  flex-direction: column;
+}
+.evidence-summary > p {
+  margin-bottom: 16px;
+}
+.evidence-summary > .text-link {
+  margin-top: auto;
+  padding-top: 20px;
+}
+.evidence-summary .score-line strong {
+  font-variant-numeric: tabular-nums;
+}
+.progress-unmeasured {
+  display: block;
+  flex: 1;
+  height: 5px;
+  min-width: 48px;
+  background: var(--line);
+}
+.progress-line > span:last-child {
+  white-space: nowrap;
+}
+.workspace .builder-steps {
+  margin-bottom: 12px;
+}
+.workspace .builder-steps li {
+  padding: 0;
+  align-items: stretch;
+}
+.workspace .builder-steps li::before {
+  display: none;
+}
+.workspace .builder-steps button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 16px 8px;
+  font-size: 12px;
+  text-align: left;
+  line-height: 1.4;
+}
+.workspace .builder-steps button > span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  background: var(--subtle);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.workspace .builder-steps .active button {
+  color: var(--brand);
+  font-weight: 600;
+}
+.workspace .builder-steps .active button > span {
+  color: var(--surface);
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.builder-save-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 24px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.builder-save-status > span:first-child {
+  white-space: nowrap;
+  color: var(--ink);
+}
+.builder-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+}
+.builder-summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.campaign-context {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+}
+.campaign-context > span {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.report-scope {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 32px;
+  padding: 24px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 24px;
+}
+.report-scope h2 {
+  margin: 8px 0;
+}
+.report-scope > small {
+  max-width: 250px;
+}
+.evidence-register {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.evidence-register > div {
+  display: grid;
+  gap: 8px;
+  padding-right: 32px;
+  border-right: 1px solid var(--line);
+}
+.evidence-register strong {
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+}
+.evidence-register span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.workspace .learning-next {
+  background: var(--surface);
+  padding: 32px;
+}
+.workspace .learning-next > small {
+  display: block;
+  margin-bottom: 20px;
+}
+.learning-next-progress {
+  max-width: 360px;
+  margin-bottom: 24px;
+}
+.learning-next-progress > small {
+  display: block;
+  margin-top: 8px;
+}
+.lesson-shell {
+  background: var(--surface);
+}
+.lesson-prose {
+  color: var(--ink);
+}
+.lesson-nav button {
+  display: flex;
+  gap: 8px;
+}
+.lesson-nav button > span {
+  min-width: 18px;
+}
+.lesson-article {
+  animation: workspace-enter var(--motion-normal) var(--ease-out) both;
+}
+.lesson-article > small[role="status"] {
+  display: block;
+  margin-top: 8px;
+}
+.learning-card-meta {
+  flex-wrap: wrap;
+}
+.workspace .metric strong {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 768px) {
+  .workspace .builder-steps {
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+  .workspace .builder-steps li {
+    min-width: 115px;
+    font-size: 11px;
+    scroll-snap-align: start;
+  }
+  .workspace .builder-steps button {
+    padding: 12px 8px;
+    gap: 6px;
+  }
+  .builder-save-status {
+    align-items: start;
+  }
+  .builder-save-status > span:last-child {
+    text-align: right;
+  }
+  .campaign-context,
+  .report-scope {
+    align-items: start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .report-scope > small {
+    max-width: none;
+  }
+  .evidence-register {
+    gap: 16px;
+  }
+  .evidence-register > div {
+    padding-right: 16px;
+  }
+  .workspace .learning-next {
+    padding: 24px;
+  }
+  .lesson-layout {
+    gap: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lesson-article {
+    animation: none;
+  }
+  .workspace .btn:hover:not(:disabled),
+  .workspace .report-action:hover,
+  .workspace .text-link:hover {
+    transform: none;
+  }
+}
+
+.lesson-mobile-navigation {
+  display: none;
+}
+@media (max-width: 768px) {
+  .lesson-mobile-navigation {
+    display: grid;
+    gap: var(--space-2);
+    font-size: var(--text-small);
+    color: var(--muted);
+  }
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    height: auto;
+    min-height: 64px;
+    padding-block: 10px;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .topbar > div {
+    min-width: 0;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .topbar .mobile-menu {
+    margin-top: 4px;
+  }
+}

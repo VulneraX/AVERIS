@@ -1,5 +1,5 @@
 import { ReportTriage } from "./intelligence/ReportTriage";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "./api";
 import { useAuth } from "./auth";
@@ -23,6 +23,43 @@ import {
   useStatus,
 } from "./ui";
 
+function InboxPanel({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const { t } = useLocale();
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    ref.current?.focus();
+    return () => {
+      if (previous?.isConnected) previous.focus();
+    };
+  }, [title]);
+  return (
+    <aside
+      ref={ref}
+      className="security-detail sheet"
+      role="region"
+      aria-label={title}
+      tabIndex={-1}
+    >
+      <div className="section-head">
+        <h2>{title}</h2>
+        <Button variant="quiet" onClick={onClose}>
+          {t("Close", "Tutup")}
+        </Button>
+      </div>
+      {children}
+    </aside>
+  );
+}
+
 export function PhishingReports() {
   const { user } = useAuth();
   const { t } = useLocale();
@@ -41,6 +78,8 @@ export function PhishingReports() {
   const [busy, setBusy] = useState(false);
   const [success, setSuccess] = useState(false);
   const [filter, setFilter] = useState("");
+  const [query, setQuery] = useState("");
+  const ReviewPanel = employee ? Dialog : InboxPanel;
   const [selected, setSelected] = useState<any>(null);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("Reviewing");
@@ -157,175 +196,289 @@ export function PhishingReports() {
           <Button disabled={busy}>{t("Submit report", "Kirim laporan")}</Button>
         </form>
       )}
-      <section className="section">
-        <div className="section-head">
-          <h2>
-            {employee
-              ? t("My reports", "Laporan saya")
-              : t("Reported messages", "Pesan dilaporkan")}
-          </h2>
-          <select
-            style={{ maxWidth: 200 }}
-            aria-label={t("Filter status", "Filter status")}
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          >
-            <option value="">{t("All statuses", "Semua status")}</option>
-            {states.map((s) => (
-              <option key={s} value={s}>
-                {label(s)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Loading resource={r}>
-          {r.data?.reports.filter((p: any) => !filter || p.status === filter)
-            .length ? (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{t("Message", "Pesan")}</th>
-                    {!employee && <th>{t("Reporter", "Pelapor")}</th>}
-                    <th>{t("Received", "Diterima")}</th>
-                    <th>{t("Status", "Status")}</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {r.data.reports
-                    .filter((p: any) => !filter || p.status === filter)
-                    .map((p: any) => (
-                      <tr key={p.id}>
-                        <td>
-                          <strong>{p.subject}</strong>
-                          <small>
-                            {p.sender} · {label(p.channel)}
-                          </small>
-                        </td>
-                        {!employee && (
-                          <td>
-                            {p.reporter}
-                            <small>{p.department}</small>
-                          </td>
-                        )}
-                        <td>{date(p.created_at, true)}</td>
-                        <td>
-                          <Status value={p.status} />
-                        </td>
-                        <td>
-                          <Button variant="quiet" onClick={() => open(p)}>
-                            {t("View", "Lihat")}
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <Empty
-              title={t(
-                "No reports in this view",
-                "Tidak ada laporan pada tampilan ini",
+      <div
+        className={
+          employee ? "" : `security-inbox ${selected ? "has-selection" : ""}`
+        }
+      >
+        <section className="section">
+          <div className="section-head">
+            <h2>
+              {employee
+                ? t("My reports", "Laporan saya")
+                : t("Reported messages", "Pesan dilaporkan")}
+            </h2>
+            <select
+              style={{ maxWidth: 200 }}
+              aria-label={t("Filter status", "Filter status")}
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              <option value="">{t("All statuses", "Semua status")}</option>
+              {states.map((s) => (
+                <option key={s} value={s}>
+                  {label(s)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {!employee && (
+            <input
+              className="inbox-search"
+              aria-label={t("Search reports", "Cari laporan")}
+              placeholder={t(
+                "Search sender, subject or reporter",
+                "Cari pengirim, subjek, atau pelapor",
               )}
-              description={t(
-                "Reported messages and their review status appear here.",
-                "Pesan yang dilaporkan dan status tinjauannya muncul di sini.",
-              )}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
             />
           )}
-        </Loading>
-      </section>
-      {selected && (
-        <Dialog title={selected.subject} onClose={() => setSelected(null)}>
-          <p>
-            {selected.sender} · {label(selected.channel)}
-          </p>
-          <div className="lesson-prose">{selected.description}</div>
-          {canReview && <ReportTriage reportId={selected.id} />}
-          <ErrorNotice error={error} />
-          {canReview ? (
-            <form
-              className="section"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setBusy(true);
-                try {
-                  await mutate(
-                    `/phishing/${selected.id}`,
-                    { status, notes, classification: classification || null },
-                    "PATCH",
-                  );
-                  setSelected(null);
-                  r.reload();
-                } catch (e) {
-                  setError(e);
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              <div className="form-grid">
-                <Field label={t("Investigation status", "Status investigasi")}>
-                  <select
-                    value={status}
-                    onChange={(e) => {
-                      const s = e.target.value;
-                      setStatus(s);
-                      if (s === "Safe") setClassification("Safe");
-                      if (s === "Confirmed Suspicious")
-                        setClassification("Suspicious");
-                    }}
-                  >
-                    {states.map((s) => (
-                      <option key={s} value={s}>
-                        {label(s)}
-                      </option>
+          <Loading resource={r}>
+            {r.data?.reports.filter((p: any) => !filter || p.status === filter)
+              .length ? (
+              !employee ? (
+                <div className="security-message-list">
+                  {r.data.reports
+                    .filter(
+                      (p: any) =>
+                        (!filter || p.status === filter) &&
+                        `${p.sender} ${p.subject} ${p.reporter}`
+                          .toLowerCase()
+                          .includes(query.toLowerCase()),
+                    )
+                    .map((p: any) => (
+                      <button
+                        key={p.id}
+                        className={`security-message ${selected?.id === p.id ? "selected" : ""}`}
+                        aria-pressed={selected?.id === p.id}
+                        onClick={() => open(p)}
+                      >
+                        <span className="section-head">
+                          <strong>{p.subject}</strong>
+                          <Status value={p.status} />
+                        </span>
+                        <span>{p.sender}</span>
+                        <small>
+                          {p.reporter} · {label(p.channel)} ·{" "}
+                          {date(p.created_at, true)}
+                        </small>
+                      </button>
                     ))}
-                  </select>
-                </Field>
-                <Field label={t("Final classification", "Klasifikasi akhir")}>
-                  <select
-                    value={classification}
-                    onChange={(e) => setClassification(e.target.value)}
-                  >
-                    <option value="">
-                      {t("Not classified", "Belum diklasifikasikan")}
-                    </option>
-                    <option value="Suspicious">
-                      {t("Suspicious", "Mencurigakan")}
-                    </option>
-                    <option value="Safe">{t("Safe", "Aman")}</option>
-                  </select>
-                </Field>
-              </div>
-              <Field label={t("Investigation notes", "Catatan investigasi")}>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </Field>
-              <small>
-                {t(
-                  "Confirmed reports contribute at most once per reporter per day.",
-                  "Laporan dikonfirmasi berkontribusi maksimal sekali per pelapor per hari.",
+                  {query &&
+                    !r.data.reports.some(
+                      (p: any) =>
+                        (!filter || p.status === filter) &&
+                        `${p.sender} ${p.subject} ${p.reporter}`
+                          .toLowerCase()
+                          .includes(query.toLowerCase()),
+                    ) && (
+                      <p className="sheet">
+                        {t(
+                          "No matching messages. Try another search.",
+                          "Tidak ada pesan yang cocok. Coba pencarian lain.",
+                        )}
+                      </p>
+                    )}
+                </div>
+              ) : (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{t("Message", "Pesan")}</th>
+                        {!employee && <th>{t("Reporter", "Pelapor")}</th>}
+                        <th>{t("Received", "Diterima")}</th>
+                        <th>{t("Status", "Status")}</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {r.data.reports
+                        .filter((p: any) => !filter || p.status === filter)
+                        .map((p: any) => (
+                          <tr key={p.id}>
+                            <td>
+                              <strong>{p.subject}</strong>
+                              <small>
+                                {p.sender} · {label(p.channel)}
+                              </small>
+                            </td>
+                            {!employee && (
+                              <td>
+                                {p.reporter}
+                                <small>{p.department}</small>
+                              </td>
+                            )}
+                            <td>{date(p.created_at, true)}</td>
+                            <td>
+                              <Status value={p.status} />
+                            </td>
+                            <td>
+                              <Button variant="quiet" onClick={() => open(p)}>
+                                {t("View", "Lihat")}
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            ) : (
+              <Empty
+                title={t(
+                  "No reports in this view",
+                  "Tidak ada laporan pada tampilan ini",
                 )}
-              </small>
-              <footer>
-                <Button disabled={busy}>
-                  {t("Save review", "Simpan tinjauan")}
-                </Button>
-              </footer>
-            </form>
-          ) : (
-            <div className="section">
-              <Status value={selected.status} />
-              {!employee && <p>{selected.notes}</p>}
-            </div>
-          )}
-        </Dialog>
-      )}
+                description={t(
+                  "Reported messages and their review status appear here.",
+                  "Pesan yang dilaporkan dan status tinjauannya muncul di sini.",
+                )}
+              />
+            )}
+          </Loading>
+        </section>
+        {selected && (
+          <ReviewPanel
+            title={selected.subject}
+            onClose={() => setSelected(null)}
+          >
+            <p>
+              {selected.sender} · {label(selected.channel)}
+            </p>
+            <dl className="inbox-record">
+              <div>
+                <dt>{t("Reporter", "Pelapor")}</dt>
+                <dd>{selected.reporter}</dd>
+              </div>
+              <div>
+                <dt>{t("Classification", "Klasifikasi")}</dt>
+                <dd>
+                  {selected.classification
+                    ? label(selected.classification)
+                    : t("Not classified", "Belum diklasifikasikan")}
+                </dd>
+              </div>
+            </dl>
+            <div className="lesson-prose">{selected.description}</div>
+            <ol
+              className="inbox-timeline"
+              aria-label={t("Report timeline", "Linimasa laporan")}
+            >
+              <li>
+                <strong>{t("Submitted", "Dikirim")}</strong>
+                <span>{date(selected.created_at, true)}</span>
+              </li>
+              {selected.updated_at !== selected.created_at && (
+                <li>
+                  <strong>
+                    {t("Latest review", "Tinjauan terakhir")} ·{" "}
+                    {label(selected.status)}
+                  </strong>
+                  <span>{date(selected.updated_at, true)}</span>
+                </li>
+              )}
+            </ol>
+            {canReview && <ReportTriage reportId={selected.id} />}
+            <ErrorNotice error={error} />
+            {canReview ? (
+              <form
+                className="section"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setBusy(true);
+                  try {
+                    await mutate(
+                      `/phishing/${selected.id}`,
+                      { status, notes, classification: classification || null },
+                      "PATCH",
+                    );
+                    setSelected(null);
+                    r.reload();
+                  } catch (e) {
+                    setError(e);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                <div className="form-grid">
+                  <Field
+                    label={t("Investigation status", "Status investigasi")}
+                  >
+                    <select
+                      value={status}
+                      onChange={(e) => {
+                        const s = e.target.value;
+                        setStatus(s);
+                        if (s === "Safe") setClassification("Safe");
+                        if (s === "Confirmed Suspicious")
+                          setClassification("Suspicious");
+                      }}
+                    >
+                      {states.map((s) => (
+                        <option key={s} value={s}>
+                          {label(s)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label={t("Final classification", "Klasifikasi akhir")}>
+                    <select
+                      value={classification}
+                      onChange={(e) => setClassification(e.target.value)}
+                    >
+                      <option value="">
+                        {t("Not classified", "Belum diklasifikasikan")}
+                      </option>
+                      <option value="Suspicious">
+                        {t("Suspicious", "Mencurigakan")}
+                      </option>
+                      <option value="Safe">{t("Safe", "Aman")}</option>
+                    </select>
+                  </Field>
+                </div>
+                <Field label={t("Investigation notes", "Catatan investigasi")}>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </Field>
+                <small>
+                  {t(
+                    "Confirmed reports contribute at most once per reporter per day.",
+                    "Laporan dikonfirmasi berkontribusi maksimal sekali per pelapor per hari.",
+                  )}
+                </small>
+                <footer>
+                  <Button disabled={busy}>
+                    {t("Save review", "Simpan tinjauan")}
+                  </Button>
+                </footer>
+              </form>
+            ) : (
+              <div className="section">
+                <Status value={selected.status} />
+                {canReview && <p>{selected.notes}</p>}
+              </div>
+            )}
+          </ReviewPanel>
+        )}
+        {!employee && !selected && Boolean(r.data?.reports.length) && (
+          <aside className="security-detail sheet">
+            <h2>
+              {t("Select a message to review", "Pilih pesan untuk ditinjau")}
+            </h2>
+            <p>
+              {t(
+                "Review the sender and report context, record findings, then set a classification. Message links remain plain text.",
+                "Tinjau pengirim dan konteks laporan, catat temuan, lalu tentukan klasifikasi. Tautan pesan tetap berupa teks biasa.",
+              )}
+            </p>
+          </aside>
+        )}
+      </div>
     </>
   );
 }
@@ -335,7 +488,18 @@ export function Settings() {
   const { t } = useLocale();
   const { user, refresh } = useAuth();
   const r = useData("/settings");
-  const active = section || "organization";
+  const active = [
+    "organization",
+    "security",
+    "score",
+    "notifications",
+    "privacy",
+    "administrators",
+    "health",
+    "audit",
+  ].includes(section || "")
+    ? section!
+    : "organization";
   const [form, setForm] = useState({
     name: "",
     locale: "id",
@@ -374,13 +538,11 @@ export function Settings() {
   };
   const nav = [
     ["organization", t("Organization", "Organisasi")],
-    ["security", t("Security", "Keamanan")],
-    ["score", "Awareness Score"],
+    ["security", t("Identity & Security", "Identitas & Keamanan")],
     ["notifications", t("Notifications", "Notifikasi")],
-    ["privacy", t("Data & privacy", "Data & privasi")],
-    ["administrators", t("Administrators", "Administrator")],
-    ["health", t("System health", "Kesehatan sistem")],
-    ["audit", t("Audit log", "Log audit")],
+    ["health", t("Delivery Health", "Kesehatan Pengiriman")],
+    ["audit", t("Audit", "Audit")],
+    ["privacy", t("Data & Retention", "Data & Retensi")],
   ];
   return (
     <>
@@ -404,7 +566,29 @@ export function Settings() {
         </nav>
         <div>
           {active === "security" ? (
-            <Account />
+            <>
+              <div className="sheet section">
+                <h2>{t("Organization access", "Akses organisasi")}</h2>
+                <p>
+                  {t(
+                    "Manage people and roles, configure identity, and review the scoring methodology.",
+                    "Kelola karyawan dan peran, konfigurasi identitas, dan tinjau metodologi penilaian.",
+                  )}
+                </p>
+                <div className="actions section">
+                  <ActionLink secondary to="/admin/employees">
+                    {t("Roles & people", "Peran & karyawan")}
+                  </ActionLink>
+                  <ActionLink secondary to="/admin/integrations">
+                    {t("SSO configuration", "Konfigurasi SSO")}
+                  </ActionLink>
+                  <ActionLink secondary to="/methodology">
+                    {t("Score governance", "Tata kelola skor")}
+                  </ActionLink>
+                </div>
+              </div>
+              <Account />
+            </>
           ) : active === "score" ? (
             <div className="sheet">
               <h2>{t("Scoring governance", "Tata kelola penilaian")}</h2>
@@ -989,6 +1173,20 @@ export function Integrations() {
           "Hubungkan layanan organisasi. Ketersediaan sesuai konektor yang telah diimplementasikan.",
         )}
       />
+      <div className="sheet section">
+        <h2>
+          {t("Verified signal connections", "Koneksi sinyal terverifikasi")}
+        </h2>
+        <p>
+          {t(
+            "Manage implemented, signed incoming signal connectors and their activity separately from planned directory integrations.",
+            "Kelola konektor sinyal masuk bertanda tangan yang sudah tersedia dan aktivitasnya secara terpisah dari rencana integrasi direktori.",
+          )}
+        </p>
+        <ActionLink secondary to="/admin/integrations/signals">
+          {t("Manage signal connectors", "Kelola konektor sinyal")}
+        </ActionLink>
+      </div>
       <Loading resource={r}>
         <div className="sheet">
           {names.map((name) => (
@@ -1024,7 +1222,7 @@ export function Integrations() {
                       ? r.data?.smtp.configured
                         ? t("Configured", "Dikonfigurasi")
                         : t("Not connected", "Belum terhubung")
-                      : t("Unavailable", "Belum tersedia")
+                      : t("Coming Soon", "Segera hadir")
                 }
               />
               <Button variant="secondary" onClick={() => setSelected(name)}>

@@ -480,6 +480,11 @@ test("phishing reports persist, deduplicate, enforce review permissions and do n
     (await ws("/phishing", employee.cookie)).data.reports[0].notes,
     undefined,
   );
+  assert.equal(
+    (await ws("/phishing", manager.cookie)).data.reports[0].notes,
+    undefined,
+    "Internal investigation notes are restricted to security administrators",
+  );
   assert.equal((await ws("/phishing", other.cookie)).data.reports.length, 0);
   await ws(
     `/phishing/${report.data.id}`,

@@ -1,5 +1,4 @@
-import { RiskMethodology } from "./intelligence/Methodology";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "./auth";
@@ -16,54 +15,146 @@ import {
   useLocale,
   useData,
 } from "./ui";
-import {
-  Overview,
-  People,
-  EmployeeDetail,
-  Campaigns,
-  CampaignBuilder,
-  CampaignDetail,
-  Awareness,
-  Reports,
-  Methodology,
-} from "./WorkspacePages";
-import {
-  LearningLibrary,
-  CourseBuilder,
-  EmployeeHome,
-  MyLearning,
-  MyAwareness,
-  LearningPlayer,
-  Quiz,
-  QuizResult,
-  Assessment,
-  Certificates,
-} from "./LearningPages";
-import {
-  Account,
-  Settings,
-  Integrations,
-  PhishingReports,
-  VerifyCertificate,
-  Simulation,
-} from "./ControlPages";
 
-import { IntelligenceOverview } from "./intelligence/Overview";
-import { HumanRisk, HumanRiskProfile } from "./intelligence/HumanRisk";
-import {
-  Cohorts,
-  ThreatFeed,
-  Autopilot,
-  IntelligenceAudit,
-} from "./intelligence/Programs";
-import { Studios, StudioEditor, Simulations } from "./intelligence/Studios";
-import {
-  EmployeeHome2,
-  SecurityProfile,
-  PracticeChallenge,
-} from "./intelligence/EmployeeSecurity";
-import { OutcomeReports } from "./intelligence/Reports";
-import { Connections } from "./intelligence/Connections";
+const Overview = lazy(() =>
+  import("./WorkspacePages").then((m) => ({ default: m.Overview })),
+);
+const People = lazy(() =>
+  import("./WorkspacePages").then((m) => ({ default: m.People })),
+);
+const EmployeeDetail = lazy(() =>
+  import("./WorkspacePages").then((m) => ({ default: m.EmployeeDetail })),
+);
+const Campaigns = lazy(() =>
+  import("./WorkspacePages").then((m) => ({ default: m.Campaigns })),
+);
+const CampaignBuilder = lazy(() =>
+  import("./WorkspacePages").then((m) => ({ default: m.CampaignBuilder })),
+);
+const CampaignDetail = lazy(() =>
+  import("./WorkspacePages").then((m) => ({ default: m.CampaignDetail })),
+);
+const Awareness = lazy(() =>
+  import("./WorkspacePages").then((m) => ({ default: m.Awareness })),
+);
+const Reports = lazy(() =>
+  import("./WorkspacePages").then((m) => ({ default: m.Reports })),
+);
+const Methodology = lazy(() =>
+  import("./WorkspacePages").then((m) => ({ default: m.Methodology })),
+);
+const LearningLibrary = lazy(() =>
+  import("./LearningPages").then((m) => ({ default: m.LearningLibrary })),
+);
+const CourseBuilder = lazy(() =>
+  import("./LearningPages").then((m) => ({ default: m.CourseBuilder })),
+);
+const EmployeeHome = lazy(() =>
+  import("./LearningPages").then((m) => ({ default: m.EmployeeHome })),
+);
+const MyLearning = lazy(() =>
+  import("./LearningPages").then((m) => ({ default: m.MyLearning })),
+);
+const MyAwareness = lazy(() =>
+  import("./LearningPages").then((m) => ({ default: m.MyAwareness })),
+);
+const LearningPlayer = lazy(() =>
+  import("./LearningPages").then((m) => ({ default: m.LearningPlayer })),
+);
+const Quiz = lazy(() =>
+  import("./LearningPages").then((m) => ({ default: m.Quiz })),
+);
+const QuizResult = lazy(() =>
+  import("./LearningPages").then((m) => ({ default: m.QuizResult })),
+);
+const Assessment = lazy(() =>
+  import("./LearningPages").then((m) => ({ default: m.Assessment })),
+);
+const Certificates = lazy(() =>
+  import("./LearningPages").then((m) => ({ default: m.Certificates })),
+);
+const Account = lazy(() =>
+  import("./ControlPages").then((m) => ({ default: m.Account })),
+);
+const Settings = lazy(() =>
+  import("./ControlPages").then((m) => ({ default: m.Settings })),
+);
+const Integrations = lazy(() =>
+  import("./ControlPages").then((m) => ({ default: m.Integrations })),
+);
+const PhishingReports = lazy(() =>
+  import("./ControlPages").then((m) => ({ default: m.PhishingReports })),
+);
+const VerifyCertificate = lazy(() =>
+  import("./ControlPages").then((m) => ({ default: m.VerifyCertificate })),
+);
+const Simulation = lazy(() =>
+  import("./ControlPages").then((m) => ({ default: m.Simulation })),
+);
+const RiskMethodology = lazy(() =>
+  import("./intelligence/Methodology").then((m) => ({
+    default: m.RiskMethodology,
+  })),
+);
+const IntelligenceOverview = lazy(() =>
+  import("./intelligence/Overview").then((m) => ({
+    default: m.IntelligenceOverview,
+  })),
+);
+const HumanRisk = lazy(() =>
+  import("./intelligence/HumanRisk").then((m) => ({ default: m.HumanRisk })),
+);
+const HumanRiskProfile = lazy(() =>
+  import("./intelligence/HumanRisk").then((m) => ({
+    default: m.HumanRiskProfile,
+  })),
+);
+const Cohorts = lazy(() =>
+  import("./intelligence/Programs").then((m) => ({ default: m.Cohorts })),
+);
+const ThreatFeed = lazy(() =>
+  import("./intelligence/Programs").then((m) => ({ default: m.ThreatFeed })),
+);
+const Autopilot = lazy(() =>
+  import("./intelligence/Programs").then((m) => ({ default: m.Autopilot })),
+);
+const IntelligenceAudit = lazy(() =>
+  import("./intelligence/Programs").then((m) => ({
+    default: m.IntelligenceAudit,
+  })),
+);
+const Studios = lazy(() =>
+  import("./intelligence/Studios").then((m) => ({ default: m.Studios })),
+);
+const StudioEditor = lazy(() =>
+  import("./intelligence/Studios").then((m) => ({ default: m.StudioEditor })),
+);
+const Simulations = lazy(() =>
+  import("./intelligence/Studios").then((m) => ({ default: m.Simulations })),
+);
+const EmployeeHome2 = lazy(() =>
+  import("./intelligence/EmployeeSecurity").then((m) => ({
+    default: m.EmployeeHome2,
+  })),
+);
+const SecurityProfile = lazy(() =>
+  import("./intelligence/EmployeeSecurity").then((m) => ({
+    default: m.SecurityProfile,
+  })),
+);
+const PracticeChallenge = lazy(() =>
+  import("./intelligence/EmployeeSecurity").then((m) => ({
+    default: m.PracticeChallenge,
+  })),
+);
+const OutcomeReports = lazy(() =>
+  import("./intelligence/Reports").then((m) => ({ default: m.OutcomeReports })),
+);
+const Connections = lazy(() =>
+  import("./intelligence/Connections").then((m) => ({
+    default: m.Connections,
+  })),
+);
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
   const { t } = useLocale();
@@ -72,14 +163,19 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
       <section className="auth-story">
         <Brand />
         <div>
-          <span className="eyebrow">HUMAN RISK INTELLIGENCE</span>
+          <span className="eyebrow">
+            {t(
+              "SECURITY AWARENESS & HUMAN RISK",
+              "KESADARAN KEAMANAN & RISIKO MANUSIA",
+            )}
+          </span>
           <h1>
-            Measure Awareness.
+            {t("Measure awareness.", "Ukur kesadaran.")}
             <br />
             <span>
-              Understand Risk.
+              {t("Understand risk.", "Pahami risiko.")}
               <br />
-              Change Behavior.
+              {t("Prove improvement.", "Buktikan peningkatan.")}
             </span>
           </h1>
           <p>
@@ -108,7 +204,7 @@ function Login() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
-    const [devBusy, setDevBusy] = useState<string | null>(null);
+  const [devBusy, setDevBusy] = useState<string | null>(null);
   if (loading) return <Skeleton />;
   if (user)
     return (
@@ -219,12 +315,14 @@ function Login() {
             <strong>Development quick login</strong>
             <small>Temporary access for local testing only.</small>
             <div className="dev-login-grid">
-              {([
-                ["superadmin", "Superadmin"],
-                ["admin", "Admin"],
-                ["manager", "Manager"],
-                ["user", "User / Employee"],
-              ] as const).map(([role, label]) => (
+              {(
+                [
+                  ["superadmin", "Superadmin"],
+                  ["admin", "Admin"],
+                  ["manager", "Manager"],
+                  ["user", "User / Employee"],
+                ] as const
+              ).map(([role, label]) => (
                 <button
                   type="button"
                   key={role}
@@ -510,161 +608,182 @@ function NotFound() {
 }
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/forgot-password" element={<PasswordReset />} />
-      <Route path="/reset-password" element={<PasswordReset reset />} />
-      <Route path="/change-password" element={<ChangePassword />} />
-      <Route path="/risk-methodology" element={<RiskMethodology />} />
-      <Route path="/verify/:id?" element={<VerifyCertificate />} />
-      <Route path="/simulation/:token" element={<Simulation />} />
-      <Route
-        path="/methodology"
-        element={
-          <div className="public-wrap">
-            <Methodology />
-          </div>
-        }
-      />
-      <Route element={<Protected />}>
-        <Route element={<Shell />}>
-          <Route path="/admin" element={<IntelligenceOverview />} />
-          <Route path="/admin/employees" element={<People />} />
-          <Route path="/admin/employees/:id" element={<EmployeeDetail />} />
-          <Route path="/admin/campaigns" element={<Campaigns />} />
-          <Route path="/admin/campaigns/new" element={<CampaignBuilder />} />
-          <Route path="/admin/campaigns/:id" element={<CampaignDetail />} />
-          <Route
-            path="/admin/campaigns/:id/edit"
-            element={<CampaignBuilder />}
-          />
-          <Route path="/admin/learning" element={<LearningLibrary />} />
-          <Route
-            path="/admin/learning/new"
-            element={
-              <SecurityAdmin>
-                <Studios />
-              </SecurityAdmin>
-            }
-          />
-          <Route path="/admin/learning/:id" element={<CourseBuilder />} />
-          <Route
-            path="/admin/studio"
-            element={
-              <SecurityAdmin>
-                <Studios />
-              </SecurityAdmin>
-            }
-          />
-          <Route
-            path="/admin/studio/:id"
-            element={
-              <SecurityAdmin>
-                <StudioEditor />
-              </SecurityAdmin>
-            }
-          />
-          <Route
-            path="/admin/simulations"
-            element={
-              <SecurityAdmin>
-                <Simulations />
-              </SecurityAdmin>
-            }
-          />
-          <Route path="/admin/human-risk" element={<HumanRisk />} />
-          <Route
-            path="/admin/human-risk/people/:id"
-            element={
-              <SecurityAdmin>
-                <HumanRiskProfile />
-              </SecurityAdmin>
-            }
-          />
-          <Route
-            path="/admin/human-risk/cohorts"
-            element={
-              <SecurityAdmin>
-                <Cohorts />
-              </SecurityAdmin>
-            }
-          />
-          <Route
-            path="/admin/human-risk/threats"
-            element={
-              <SecurityAdmin>
-                <ThreatFeed />
-              </SecurityAdmin>
-            }
-          />
-          <Route
-            path="/admin/human-risk/autopilot"
-            element={
-              <SecurityAdmin>
-                <Autopilot />
-              </SecurityAdmin>
-            }
-          />
-          <Route
-            path="/admin/human-risk/audit"
-            element={
-              <SecurityAdmin>
-                <IntelligenceAudit />
-              </SecurityAdmin>
-            }
-          />
-          <Route path="/admin/awareness" element={<Awareness />} />
-          <Route path="/admin/reports" element={<OutcomeReports />} />
-          <Route path="/admin/reports/inbox" element={<PhishingReports />} />
-          <Route
-            path="/admin/reports/certificates"
-            element={<Certificates />}
-          />
-          <Route
-            path="/admin/integrations"
-            element={
-              <SecurityAdmin>
-                <Connections />
-              </SecurityAdmin>
-            }
-          />
-          <Route path="/admin/settings/:section?" element={<Settings />} />
-          <Route
-            path="/admin/content"
-            element={<Navigate to="/admin/learning" replace />}
-          />
-          <Route
-            path="/admin/automation"
-            element={<Navigate to="/admin/human-risk/autopilot" replace />}
-          />
-          <Route
-            path="/admin/audit"
-            element={<Navigate to="/admin/settings/audit" replace />}
-          />
+    <Suspense fallback={<Skeleton />}>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<PasswordReset />} />
+        <Route path="/reset-password" element={<PasswordReset reset />} />
+        <Route path="/change-password" element={<ChangePassword />} />
+        <Route path="/risk-methodology" element={<RiskMethodology />} />
+        <Route path="/verify/:id?" element={<VerifyCertificate />} />
+        <Route path="/simulation/:token" element={<Simulation />} />
+        <Route
+          path="/methodology"
+          element={
+            <div className="public-wrap">
+              <Methodology />
+            </div>
+          }
+        />
+        <Route element={<Protected />}>
+          <Route element={<Shell />}>
+            <Route path="/admin" element={<Overview />} />
+            <Route path="/admin/employees" element={<People />} />
+            <Route path="/admin/employees/:id" element={<EmployeeDetail />} />
+            <Route path="/admin/campaigns" element={<Campaigns />} />
+            <Route path="/admin/campaigns/new" element={<CampaignBuilder />} />
+            <Route path="/admin/campaigns/:id" element={<CampaignDetail />} />
+            <Route
+              path="/admin/campaigns/:id/edit"
+              element={<CampaignBuilder />}
+            />
+            <Route path="/admin/learning" element={<LearningLibrary />} />
+            <Route
+              path="/admin/learning/new"
+              element={
+                <SecurityAdmin>
+                  <CourseBuilder />
+                </SecurityAdmin>
+              }
+            />
+            <Route path="/admin/learning/:id" element={<CourseBuilder />} />
+            <Route
+              path="/admin/studio"
+              element={
+                <SecurityAdmin>
+                  <Studios />
+                </SecurityAdmin>
+              }
+            />
+            <Route
+              path="/admin/studio/:id"
+              element={
+                <SecurityAdmin>
+                  <StudioEditor />
+                </SecurityAdmin>
+              }
+            />
+            <Route
+              path="/admin/simulations"
+              element={
+                <SecurityAdmin>
+                  <Simulations />
+                </SecurityAdmin>
+              }
+            />
+            <Route
+              path="/admin/human-risk/overview"
+              element={<IntelligenceOverview />}
+            />
+            <Route
+              path="/admin/reports/outcomes"
+              element={<OutcomeReports />}
+            />
+            <Route path="/admin/human-risk" element={<HumanRisk />} />
+            <Route
+              path="/admin/human-risk/people/:id"
+              element={
+                <SecurityAdmin>
+                  <HumanRiskProfile />
+                </SecurityAdmin>
+              }
+            />
+            <Route
+              path="/admin/human-risk/cohorts"
+              element={
+                <SecurityAdmin>
+                  <Cohorts />
+                </SecurityAdmin>
+              }
+            />
+            <Route
+              path="/admin/human-risk/threats"
+              element={
+                <SecurityAdmin>
+                  <ThreatFeed />
+                </SecurityAdmin>
+              }
+            />
+            <Route
+              path="/admin/human-risk/autopilot"
+              element={
+                <SecurityAdmin>
+                  <Autopilot />
+                </SecurityAdmin>
+              }
+            />
+            <Route
+              path="/admin/human-risk/audit"
+              element={
+                <SecurityAdmin>
+                  <IntelligenceAudit />
+                </SecurityAdmin>
+              }
+            />
+            <Route path="/admin/awareness" element={<Awareness />} />
+            <Route path="/admin/reports" element={<Reports />} />
+            <Route path="/admin/reports/inbox" element={<PhishingReports />} />
+            <Route
+              path="/admin/reports/certificates"
+              element={<Certificates />}
+            />
+            <Route
+              path="/admin/integrations"
+              element={
+                <SecurityAdmin>
+                  <Integrations />
+                </SecurityAdmin>
+              }
+            />
+            <Route
+              path="/admin/integrations/signals"
+              element={
+                <SecurityAdmin>
+                  <Connections />
+                </SecurityAdmin>
+              }
+            />
+            <Route path="/admin/settings/:section?" element={<Settings />} />
+            <Route
+              path="/admin/content"
+              element={<Navigate to="/admin/learning" replace />}
+            />
+            <Route
+              path="/admin/automation"
+              element={<Navigate to="/admin/human-risk/autopilot" replace />}
+            />
+            <Route
+              path="/admin/audit"
+              element={<Navigate to="/admin/settings/audit" replace />}
+            />
+          </Route>
         </Route>
-      </Route>
-      <Route element={<Protected employee />}>
-        <Route element={<Shell />}>
-          <Route path="/employee" element={<EmployeeHome2 />} />
-          <Route path="/employee/learning" element={<MyLearning />} />
+        <Route element={<Protected employee />}>
+          <Route element={<Shell />}>
+            <Route path="/employee" element={<EmployeeHome />} />
+            <Route path="/employee/learning" element={<MyLearning />} />
+            <Route
+              path="/employee/challenges/:id"
+              element={<PracticeChallenge />}
+            />
+            <Route path="/employee/awareness" element={<MyAwareness />} />
+            <Route path="/employee/certificates" element={<Certificates />} />
+            <Route
+              path="/employee/report-phishing"
+              element={<PhishingReports />}
+            />
+            <Route path="/employee/account" element={<Account />} />
+          </Route>
+          <Route path="/employee/learning/:id" element={<LearningPlayer />} />
+          <Route path="/employee/learning/:id/quiz" element={<Quiz />} />
           <Route
-            path="/employee/challenges/:id"
-            element={<PracticeChallenge />}
+            path="/employee/learning/:id/result"
+            element={<QuizResult />}
           />
-          <Route path="/employee/awareness" element={<SecurityProfile />} />
-          <Route path="/employee/certificates" element={<Certificates />} />
-          <Route
-            path="/employee/report-phishing"
-            element={<PhishingReports />}
-          />
-          <Route path="/employee/account" element={<Account />} />
+          <Route path="/employee/assessment/:id" element={<Assessment />} />
         </Route>
-        <Route path="/employee/learning/:id" element={<LearningPlayer />} />
-        <Route path="/employee/learning/:id/quiz" element={<Quiz />} />
-        <Route path="/employee/learning/:id/result" element={<QuizResult />} />
-        <Route path="/employee/assessment/:id" element={<Assessment />} />
-      </Route>
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 }

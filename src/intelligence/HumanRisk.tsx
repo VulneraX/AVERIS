@@ -457,7 +457,10 @@ export function HumanRiskProfile() {
                     <strong>{display(p.score)}</strong>
                   </div>
                   <p className="intel-help">{p.explanation}</p>
-                  <Link className="intel-link" to="/risk-methodology">Read factor rules and measurement limits <ArrowRight size={13}/></Link>
+                  <Link className="intel-link" to="/risk-methodology">
+                    Read factor rules and measurement limits{" "}
+                    <ArrowRight size={13} />
+                  </Link>
                   <p className="intel-help">
                     Learning completion adds evidence of participation. It does
                     not reduce risk without an observed safer decision.

@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
 import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { z } from 'zod';
 import { applyProductAction } from './product-actions.mjs';
 import { db, databasePath, getProductState, pruneExpiredSessions, saveProductState, writeAudit } from './db.mjs';
@@ -446,8 +446,21 @@ app.use('/api', (_req, res) => res.status(404).json({ error: { code: 'NOT_FOUND'
 if (production || process.env.SERVE_STATIC === 'true') {
   const distPath = resolve('dist');
   if (!existsSync(distPath)) throw new Error('Folder dist tidak ditemukan. Jalankan npm run build terlebih dahulu.');
-  app.use(express.static(distPath, { maxAge: '1h', etag: true }));
-  app.get(/.*/, (_req, res) => res.sendFile(resolve(distPath, 'index.html')));
+  const manifestPath = resolve(distPath, 'public-routes.json');
+  const publicRoutes = new Set(existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : ['/']);
+  app.get(/.*/, (req, res, next) => {
+    const route = req.path.replace(/\/$/, '') || '/';
+    if (!publicRoutes.has(route)) return next();
+    const relative = route.slice(1);
+    const htmlPath = resolve(distPath, req.query.lang === 'id' ? 'localized/id' : '.', relative, 'index.html');
+    res.set('Cache-Control', 'public, max-age=0, must-revalidate');
+    res.sendFile(htmlPath);
+  });
+  app.use(express.static(distPath, { maxAge: '1h', etag: true, index: false, redirect: false }));
+  app.get(/.*/, (req, res) => {
+    if (!/^\/(admin|employee|login|forgot-password|reset-password|change-password|risk-methodology|verify|simulation|methodology)(\/|$)/.test(req.path)) res.status(404);
+    res.sendFile(resolve(distPath, existsSync(resolve(distPath, 'app.html')) ? 'app.html' : 'index.html'));
+  });
 }
 
 app.use('/api', (_req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Endpoint tidak ditemukan.' } }));

@@ -1,10 +1,10 @@
-export type Role = 'super_admin' | 'admin' | 'manager' | 'employee';
-export type AdminRole = Exclude<Role, 'employee'>;
+export type Role = "super_admin" | "admin" | "manager" | "employee";
+export type AdminRole = Exclude<Role, "employee">;
 
 export function isAdminRole(role: Role): role is AdminRole {
-  return role !== 'employee';
+  return role !== "employee";
 }
-export type ScoreLevel = 'Strong' | 'Good' | 'Needs Improvement' | 'High Risk';
+export type ScoreLevel = "Strong" | "Good" | "Needs Improvement" | "High Risk";
 
 export interface Employee {
   id: string;
@@ -17,7 +17,7 @@ export interface Employee {
   completion: number;
   score: number;
   weakest: string;
-  status: 'Completed' | 'In Progress' | 'Not Started';
+  status: "Completed" | "In Progress" | "Not Started";
   lastActivity: string;
 }
 

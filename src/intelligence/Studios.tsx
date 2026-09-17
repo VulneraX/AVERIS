@@ -61,7 +61,12 @@ export function Studios() {
           <span className="intel-studio-icon">
             <FileText size={25} />
           </span>
-          <h2>{t("Start with what your people need to know.", "Mulai dari hal yang perlu diketahui tim Anda.")}</h2>
+          <h2>
+            {t(
+              "Start with what your people need to know.",
+              "Mulai dari hal yang perlu diketahui tim Anda.",
+            )}
+          </h2>
           <p>
             {t(
               "Use a policy, PDF, text, URL, existing course, or security bulletin as your reference.",
@@ -77,7 +82,10 @@ export function Studios() {
         </div>
         <div className="intel-studio-callout">
           <strong>One workspace, from idea to approved draft.</strong>
-          <span>Choose the type, add context, then review the result before publishing.</span>
+          <span>
+            Choose the type, add context, then review the result before
+            publishing.
+          </span>
         </div>
       </div>
       <div className="intel-privacy-note">
@@ -166,7 +174,9 @@ function CreateDraft({
   const [sourceLabel, setSourceLabel] = useState("Manual source");
   const [sourceType, setSourceType] = useState("text");
   const [url, setUrl] = useState("");
-  const [generationMode, setGenerationMode] = useState<"manual" | "ai">("manual");
+  const [generationMode, setGenerationMode] = useState<"manual" | "ai">(
+    "manual",
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const courses = useData("/courses");
@@ -202,9 +212,10 @@ function CreateDraft({
               language: f.get("language") || "en",
               generationLevel: f.get("generationLevel") || "Foundation",
               lessonCount: Number(f.get("lessonCount") || 3),
-              generate: kind === "content"
-                ? generationMode === "ai"
-                : submitter?.value === "ai",
+              generate:
+                kind === "content"
+                  ? generationMode === "ai"
+                  : submitter?.value === "ai",
             });
             onCreated(result.draft.id);
           } catch (e) {
@@ -216,8 +227,15 @@ function CreateDraft({
       >
         <div className="intel-form-heading">
           <div>
-            <strong>{t("Start with the outcome", "Mulai dari hasil yang diinginkan")}</strong>
-            <p>{t("Give this draft a clear purpose. You can edit every generated detail later.", "Tentukan tujuan draft dengan jelas. Semua hasil tetap bisa diedit nanti.")}</p>
+            <strong>
+              {t("Start with the outcome", "Mulai dari hasil yang diinginkan")}
+            </strong>
+            <p>
+              {t(
+                "Give this draft a clear purpose. You can edit every generated detail later.",
+                "Tentukan tujuan draft dengan jelas. Semua hasil tetap bisa diedit nanti.",
+              )}
+            </p>
           </div>
           <span className="intel-status">Draft only</span>
         </div>
@@ -229,7 +247,13 @@ function CreateDraft({
             ["simulation", "Simulation"],
           ]}
         />
-        <Field label={t("Title", "Judul")} hint={t("Use a name your team will recognize.", "Gunakan nama yang mudah dikenali tim.")}>
+        <Field
+          label={t("Title", "Judul")}
+          hint={t(
+            "Use a name your team will recognize.",
+            "Gunakan nama yang mudah dikenali tim.",
+          )}
+        >
           <input
             name="title"
             maxLength={150}
@@ -258,8 +282,18 @@ function CreateDraft({
         {kind === "content" && (
           <div className="intel-form-heading">
             <div>
-              <strong>{t("How do you want to create it?", "Bagaimana Anda ingin membuatnya?")}</strong>
-              <p>{t("Start manually, or let AI prepare an editable first version.", "Mulai secara manual, atau biarkan AI menyiapkan versi awal yang bisa diedit.")}</p>
+              <strong>
+                {t(
+                  "How do you want to create it?",
+                  "Bagaimana Anda ingin membuatnya?",
+                )}
+              </strong>
+              <p>
+                {t(
+                  "Start manually, or let AI prepare an editable first version.",
+                  "Mulai secara manual, atau biarkan AI menyiapkan versi awal yang bisa diedit.",
+                )}
+              </p>
             </div>
             <div className="actions">
               <Button
@@ -324,14 +358,32 @@ function CreateDraft({
         ) : generationMode === "ai" ? (
           <>
             <div className="intel-form-grid">
-              <Field label={t("Course level", "Level course")} hint={t("Sets the language and complexity.", "Mengatur bahasa dan tingkat kompleksitas.")}>
+              <Field
+                label={t("Course level", "Level course")}
+                hint={t(
+                  "Sets the language and complexity.",
+                  "Mengatur bahasa dan tingkat kompleksitas.",
+                )}
+              >
                 <select name="generationLevel">
-                  <option value="Foundation">{t("Easy · Foundation", "Mudah · Foundation")}</option>
-                  <option value="Intermediate">{t("Balanced · Intermediate", "Seimbang · Intermediate")}</option>
-                  <option value="Advanced">{t("Deep · Advanced", "Mendalam · Advanced")}</option>
+                  <option value="Foundation">
+                    {t("Easy · Foundation", "Mudah · Foundation")}
+                  </option>
+                  <option value="Intermediate">
+                    {t("Balanced · Intermediate", "Seimbang · Intermediate")}
+                  </option>
+                  <option value="Advanced">
+                    {t("Deep · Advanced", "Mendalam · Advanced")}
+                  </option>
                 </select>
               </Field>
-              <Field label={t("Number of lessons", "Banyaknya lesson")} hint={t("Choose how much content AI should prepare.", "Pilih jumlah materi yang disiapkan AI.")}>
+              <Field
+                label={t("Number of lessons", "Banyaknya lesson")}
+                hint={t(
+                  "Choose how much content AI should prepare.",
+                  "Pilih jumlah materi yang disiapkan AI.",
+                )}
+              >
                 <select name="lessonCount">
                   <option value="2">2 {t("lessons", "lesson")}</option>
                   <option value="3">3 {t("lessons", "lesson")}</option>
@@ -340,7 +392,12 @@ function CreateDraft({
                 </select>
               </Field>
             </div>
-            <Field label={t("Reference material (optional)", "Materi rujukan (opsional)")}>
+            <Field
+              label={t(
+                "Reference material (optional)",
+                "Materi rujukan (opsional)",
+              )}
+            >
               <select
                 value={sourceType}
                 onChange={(e) => setSourceType(e.target.value)}
@@ -353,7 +410,12 @@ function CreateDraft({
               </select>
             </Field>
             {sourceType === "file" && (
-              <Field label={t("Upload policy or guidance", "Unggah kebijakan atau panduan")}>
+              <Field
+                label={t(
+                  "Upload policy or guidance",
+                  "Unggah kebijakan atau panduan",
+                )}
+              >
                 <input
                   type="file"
                   accept=".pdf,.txt,.md"
@@ -408,7 +470,9 @@ function CreateDraft({
               </div>
             )}
             {sourceType === "course" && (
-                <Field label={t("Existing learning", "Pembelajaran yang sudah ada")}>
+              <Field
+                label={t("Existing learning", "Pembelajaran yang sudah ada")}
+              >
                 <select
                   defaultValue=""
                   onChange={(e) => {
@@ -436,7 +500,7 @@ function CreateDraft({
               </Field>
             )}
             {sourceType === "bulletin" && (
-                <Field label={t("Security bulletin", "Buletin keamanan")}>
+              <Field label={t("Security bulletin", "Buletin keamanan")}>
                 <select
                   defaultValue=""
                   onChange={(e) => {
@@ -460,7 +524,10 @@ function CreateDraft({
             )}
             <Field
               label={t("Reference text", "Teks rujukan")}
-              hint={t("Optional. Keep only the guidance you want to turn into learning.", "Opsional. Masukkan panduan yang ingin diubah menjadi pembelajaran.")}
+              hint={t(
+                "Optional. Keep only the guidance you want to turn into learning.",
+                "Opsional. Masukkan panduan yang ingin diubah menjadi pembelajaran.",
+              )}
             >
               <textarea
                 value={source}
@@ -477,14 +544,21 @@ function CreateDraft({
         ) : (
           <div className="intel-privacy-note">
             <BookOpen size={17} />
-            {t("You can add lessons and quiz questions in the editor after creating the course.", "Anda dapat menambahkan lesson dan pertanyaan kuis di editor setelah membuat course.")}
+            {t(
+              "You can add lessons and quiz questions in the editor after creating the course.",
+              "Anda dapat menambahkan lesson dan pertanyaan kuis di editor setelah membuat course.",
+            )}
           </div>
         )}
         <ErrorNotice error={error} />
         <div className="actions">
           {kind === "content" ? (
             <Button
-              disabled={busy || (generationMode === "ai" && (!provider?.configured || !provider?.enabled))}
+              disabled={
+                busy ||
+                (generationMode === "ai" &&
+                  (!provider?.configured || !provider?.enabled))
+              }
               aria-label={t("Create course", "Buat course")}
             >
               {busy
@@ -496,9 +570,16 @@ function CreateDraft({
           ) : (
             <>
               <Button name="method" value="manual" disabled={busy}>
-                {busy ? t("Preparing…", "Menyiapkan…") : t("Create draft", "Buat draft")}
+                {busy
+                  ? t("Preparing…", "Menyiapkan…")
+                  : t("Create draft", "Buat draft")}
               </Button>
-              <Button name="method" value="ai" variant="secondary" disabled={busy || !provider?.configured || !provider?.enabled}>
+              <Button
+                name="method"
+                value="ai"
+                variant="secondary"
+                disabled={busy || !provider?.configured || !provider?.enabled}
+              >
                 <Sparkles size={15} />
                 {t("Generate with AI", "Buat dengan AI")}
               </Button>
@@ -506,7 +587,10 @@ function CreateDraft({
           )}
         </div>
         <p className="intel-help">
-          {t("You can edit the course before publishing. Nothing is published automatically.", "Course dapat diedit sebelum diterbitkan. Tidak ada yang dipublikasikan otomatis.")}
+          {t(
+            "You can edit the course before publishing. Nothing is published automatically.",
+            "Course dapat diedit sebelum diterbitkan. Tidak ada yang dipublikasikan otomatis.",
+          )}
         </p>
       </form>
     </Dialog>
@@ -593,7 +677,9 @@ export function StudioEditor() {
             />
             <div className="intel-privacy-note">
               <BookOpen size={16} />
-              {d.status === "Published" ? "Published course" : "Draft course · ready to edit"}
+              {d.status === "Published"
+                ? "Published course"
+                : "Draft course · ready to edit"}
             </div>
             <ErrorNotice error={error} />
             <div className="intel-editor-layout">
@@ -949,17 +1035,7 @@ export function StudioEditor() {
                     </dd>
                   </div>
                 </dl>
-                {d.status !== "Published" && d.kind === "content" ? (
-                  <>
-                    <Button
-                      disabled={dirty || busy}
-                      onClick={() => transition("publish", true)}
-                    >
-                      Publish course
-                      <Check size={15} />
-                    </Button>
-                  </>
-                ) : d.status !== "Published" && (
+                {d.status !== "Published" && (
                   <>
                     <label className="intel-consent">
                       <input
@@ -1236,7 +1312,96 @@ function AssignPractice({
     </Dialog>
   );
 }
+function SimulationLibrary() {
+  const { t } = useLocale();
+  const resource = useIntelligence("/studios");
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<any>(null);
+  const templates = (resource.data?.drafts || []).filter(
+    (draft: any) =>
+      draft.kind === "simulation" &&
+      `${draft.title} ${draft.document.topic || ""}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
+  return (
+    <section className="sheet section">
+      <div className="section-head">
+        <div>
+          <h2>{t("Simulation library", "Pustaka simulasi")}</h2>
+          <p>
+            {t(
+              "Preview your scenarios and review each version before assigning practice.",
+              "Pratinjau skenario Anda dan tinjau setiap versi sebelum menugaskan latihan.",
+            )}
+          </p>
+        </div>
+        <input
+          style={{ maxWidth: 280 }}
+          aria-label={t("Search simulations", "Cari simulasi")}
+          placeholder={t("Search scenarios", "Cari skenario")}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+      <Loading resource={resource}>
+        {templates.length ? (
+          templates.map((draft: any) => (
+            <div className="row" key={draft.id}>
+              <div>
+                <strong>{draft.title}</strong>
+                <small>
+                  {draft.document.channel} · {t("Version", "Versi")}{" "}
+                  {draft.version} · {draft.status}
+                </small>
+              </div>
+              <Button variant="secondary" onClick={() => setSelected(draft)}>
+                {t("Preview", "Pratinjau")}
+              </Button>
+            </div>
+          ))
+        ) : (
+          <Empty
+            title={t("No matching scenarios", "Tidak ada skenario yang cocok")}
+            description={t(
+              "Create a reviewed scenario in Simulation Studio. Published learning and scenarios remain separate.",
+              "Buat skenario yang ditinjau di Studio Simulasi. Pembelajaran terbit dan skenario tetap terpisah.",
+            )}
+          />
+        )}
+      </Loading>
+      <div className="actions section">
+        <Link className="btn secondary" to="/admin/studio?kind=simulation">
+          {t("Create scenario", "Buat skenario")}
+        </Link>
+        <Link className="btn secondary" to="/admin/campaigns/new">
+          {t("Plan a campaign", "Rencanakan kampanye")}
+        </Link>
+      </div>
+      {selected && (
+        <Dialog title={selected.title} onClose={() => setSelected(null)}>
+          <span className="intel-status">
+            {selected.status} · {t("Version", "Versi")} {selected.version}
+          </span>
+          <h3 className="section">{selected.document.subject}</h3>
+          <p className="lesson-prose">{selected.document.message}</p>
+          <div className="notice section">
+            {t(
+              "Preview only. No message is sent and no credentials are collected. Campaign phishing options are configured separately in the campaign builder.",
+              "Hanya pratinjau. Tidak ada pesan dikirim atau kredensial dikumpulkan. Opsi phishing kampanye diatur terpisah di pembuat kampanye.",
+            )}
+          </div>
+          <Link className="btn primary" to={`/admin/studio/${selected.id}`}>
+            {t("Review scenario", "Tinjau skenario")}
+          </Link>
+        </Dialog>
+      )}
+    </section>
+  );
+}
+
 export function Simulations() {
+  const { t } = useLocale();
   const r = useIntelligence("/practice");
   const [send, setSend] = useState<any>(null);
   const [error, setError] = useState<unknown>(null);
@@ -1266,6 +1431,7 @@ export function Simulations() {
         No real credentials, MFA codes, malware, or external authorization.
         Voice and deepfake scenarios teach independent verification.
       </div>
+      <SimulationLibrary />
       <Loading resource={r}>
         <section className="sheet">
           <div className="section-head">
@@ -1302,8 +1468,10 @@ export function Simulations() {
                           {p.reported_at
                             ? "Reported"
                             : p.clicked_at
-                              ? "Coaching shown"
-                              : p.status}
+                              ? t("Clicked", "Diklik")
+                              : p.opened_at
+                                ? t("Opened", "Dibuka")
+                                : t("No action", "Belum ada tindakan")}
                         </span>
                       </td>
                       <td>
